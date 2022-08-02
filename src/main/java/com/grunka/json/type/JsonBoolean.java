@@ -7,7 +7,7 @@ public class JsonBoolean extends JsonValue {
     public static final JsonBoolean FALSE = new JsonBoolean(false);
     private final boolean value;
 
-    public JsonBoolean(boolean value) {
+    private JsonBoolean(boolean value) {
         this.value = value;
     }
 
