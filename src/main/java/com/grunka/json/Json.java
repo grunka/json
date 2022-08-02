@@ -62,7 +62,7 @@ public class Json {
                 }
                 value = new JsonString(builder.toString());
             } else if ("-0123456789".indexOf(json.charAt(position)) != -1) {
-                Pattern numberPattern = Pattern.compile("^-?(0|1[0-9]*)([.][0-9]+)?([eE][+-]?[0-9]+)?");
+                Pattern numberPattern = Pattern.compile("^-?(0|[1-9][0-9]*)([.][0-9]+)?([eE][+-]?[0-9]+)?");
                 Matcher matcher = numberPattern.matcher(json.substring(position));
                 if (matcher.find()) {
                     String number = matcher.group();
