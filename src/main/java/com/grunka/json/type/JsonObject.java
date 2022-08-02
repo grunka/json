@@ -3,6 +3,7 @@ package com.grunka.json.type;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -76,5 +77,22 @@ public class JsonObject extends JsonValue implements Map<JsonString, JsonValue> 
     @Override
     public Set<Entry<JsonString, JsonValue>> entrySet() {
         return values.entrySet();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        JsonObject that = (JsonObject) o;
+        return values.equals(that.values);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(values);
     }
 }

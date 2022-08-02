@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class JsonArray extends JsonValue implements List<JsonValue> {
@@ -135,5 +136,22 @@ public class JsonArray extends JsonValue implements List<JsonValue> {
     @Override
     public List<JsonValue> subList(int fromIndex, int toIndex) {
         return values.subList(fromIndex, toIndex);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        JsonArray that = (JsonArray) o;
+        return values.equals(that.values);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(values);
     }
 }
