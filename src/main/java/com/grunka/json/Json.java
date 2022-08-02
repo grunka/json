@@ -4,6 +4,7 @@ import com.grunka.json.type.JsonArray;
 import com.grunka.json.type.JsonBoolean;
 import com.grunka.json.type.JsonNull;
 import com.grunka.json.type.JsonNumber;
+import com.grunka.json.type.JsonObject;
 import com.grunka.json.type.JsonString;
 import com.grunka.json.type.JsonValue;
 
@@ -82,6 +83,15 @@ public class Json {
             } else if (json.charAt(position) == ']') {
                 if (stack.isEmpty() || !stack.peek().isArray()) {
                     throw new JsonParseException("End of array encountered without array on stack");
+                }
+                position++;
+                value = stack.pop();
+            } else if (json.charAt(position) == '{') {
+                position++;
+                stack.push(new JsonObject());
+            } else if (json.charAt(position) == '}') {
+                if (stack.isEmpty() || !stack.peek().isObject()) {
+                    throw new JsonParseException("End of object encountered without object on stack");
                 }
                 position++;
                 value = stack.pop();

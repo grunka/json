@@ -64,6 +64,15 @@ public class JsonTest {
         assertTrue(Json.parse("[[], []]").asArray().get(0).asArray().isEmpty());
         assertTrue(Json.parse("[[], []]").asArray().get(1).asArray().isEmpty());
         assertTrue(Json.parse("[1,2,3,\"a\",\"d\",\"c\"]").isArray());
-        assertEquals(6, Json.parse("[1,2,3,\"a\",\"d\",\"c\"]").asArray().size());
+        assertEquals(9, Json.parse("[1,2,3,\"a\",\"d\",\"c\",true,false,null]").asArray().size());
     }
+
+    @Test
+    public void shouldParseObjects() {
+        assertTrue(Json.parse("{}").isObject());
+        assertTrue(Json.parse("{}").asObject().isEmpty());
+    }
+
+    //TODO object parsing
+    //TODO good error messages
 }

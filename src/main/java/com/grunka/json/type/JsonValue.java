@@ -36,4 +36,12 @@ public class JsonValue {
     public JsonArray asArray() {
         return (JsonArray) this;
     }
+
+    public boolean isObject() {
+        return false;
+    }
+
+    public JsonObject asObject() {
+        return (JsonObject) this;
+    }
 }

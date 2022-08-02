@@ -20,6 +20,11 @@ public class JsonObject extends JsonValue implements Map<JsonString, JsonValue> 
     }
 
     @Override
+    public boolean isObject() {
+        return true;
+    }
+
+    @Override
     public int size() {
         return values.size();
     }
