@@ -36,7 +36,7 @@ public class JsonTest {
     @Test
     public void shouldParseNumber() {
         assertTrue(Json.parse("1").isNumber());
-        assertTrue(Json.parse("\n\t1    \b").isNumber());
+        assertTrue(Json.parse("\n\t1    \t  ").isNumber());
         assertTrue(Json.parse("-1").isNumber());
         assertTrue(Json.parse("-1.1").isNumber());
         assertTrue(Json.parse("1.1").isNumber());
