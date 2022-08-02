@@ -54,5 +54,16 @@ public class JsonTest {
     public void shouldParseArray() {
         assertTrue(Json.parse("[]").isArray());
         assertTrue(Json.parse("[]").asArray().isEmpty());
+        assertTrue(Json.parse(" \n [\n\r]  \t ").isArray());
+        assertTrue(Json.parse(" \n [\n\r]  \t ").asArray().isEmpty());
+        assertTrue(Json.parse("[[]]").isArray());
+        assertEquals(1, Json.parse("[[]]").asArray().size());
+        assertTrue(Json.parse("[[]]").asArray().get(0).asArray().isEmpty());
+        assertTrue(Json.parse("[[], []]").isArray());
+        assertEquals(2, Json.parse("[[], []]").asArray().size());
+        assertTrue(Json.parse("[[], []]").asArray().get(0).asArray().isEmpty());
+        assertTrue(Json.parse("[[], []]").asArray().get(1).asArray().isEmpty());
+        assertTrue(Json.parse("[1,2,3,\"a\",\"d\",\"c\"]").isArray());
+        assertEquals(6, Json.parse("[1,2,3,\"a\",\"d\",\"c\"]").asArray().size());
     }
 }
