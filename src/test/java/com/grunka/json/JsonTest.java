@@ -76,5 +76,10 @@ public class JsonTest {
         assertEquals(new JsonString("A"), Json.parse("{\"a\":\"A\"}").asObject().get(new JsonString("a")));
     }
 
-    //TODO good error messages
+    @Test
+    public void shouldParseComplexValue() {
+        String json = "[1,\"a\",{\"Abc\":123,\"hello\":\"world\",\"list\":[true,false,true,null],\"null\":null,\"another one\":{}}]";
+        String unparsed = Json.parse(json).toString();
+        assertEquals(json, unparsed);
+    }
 }

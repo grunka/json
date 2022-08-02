@@ -75,7 +75,7 @@ public class Json {
                     throw new JsonParseException("Could not parse number");
                 }
             } else if (json.charAt(position) == ',') {
-                if (stack.isEmpty() || (!stack.peek().isArray() && !stack.peek().isObject())) {
+                if (stack.isEmpty() || (!stack.peek().isArray() && !(stack.peek() instanceof JsonObjectKey))) {
                     throw new JsonParseException("No array or object on stack");
                 }
                 expectsMore = true;
