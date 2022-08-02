@@ -75,7 +75,6 @@ public class Json {
                 position++;
                 stack.push(new JsonArray());
             } else if (json.charAt(position) == ',') {
-                //continue
                 if (stack.isEmpty() || !stack.peek().isArray()) {
                     throw new JsonParseException("No array on stack");
                 }
