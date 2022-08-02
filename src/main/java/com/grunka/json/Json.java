@@ -16,6 +16,9 @@ import java.util.regex.Pattern;
 public class Json {
     private static final Pattern NUMBER_PATTERN = Pattern.compile("^-?(0|[1-9][0-9]*)([.][0-9]+)?([eE][+-]?[0-9]+)?");
 
+    private Json() {
+    }
+
     public static JsonValue parse(String json) {
         int position = 0;
         boolean expectsMore = false;
