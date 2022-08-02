@@ -2,10 +2,10 @@ package com.grunka.json.type;
 
 import java.math.BigDecimal;
 
-public class JsonNumber extends JsonValue {
-    private final String number;
+public class JsonNumber extends JsonValue implements Comparable<JsonNumber> {
+    private final BigDecimal number;
 
-    public JsonNumber(String number) {
+    public JsonNumber(BigDecimal number) {
         this.number = number;
     }
 
@@ -14,7 +14,17 @@ public class JsonNumber extends JsonValue {
         return true;
     }
 
-    public int toInt() {
-        return new BigDecimal(number).intValue();
+    public BigDecimal getBigDecimal() {
+        return number;
+    }
+
+    @Override
+    public String toString() {
+        return number.toPlainString();
+    }
+
+    @Override
+    public int compareTo(JsonNumber o) {
+        return number.compareTo(o.number);
     }
 }

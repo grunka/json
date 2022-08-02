@@ -1,9 +1,6 @@
 package com.grunka.json.type;
 
-import java.util.regex.Pattern;
-
 public class JsonString extends JsonValue {
-    private static final Pattern ESCAPE_PATTERN = Pattern.compile("\\\\([\"\\\\/bfnrtu])([0-9a-f]{4})?");
     private final String value;
 
     public JsonString(String value) {

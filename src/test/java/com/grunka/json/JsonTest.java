@@ -46,6 +46,6 @@ public class JsonTest {
         assertTrue(Json.parse("-0.1e-11").isNumber());
         assertTrue(Json.parse("0.1e-11").isNumber());
         assertTrue(Json.parse("0.1E11").isNumber());
-        assertEquals(1, Json.parse("1").asNumber().toInt());
+        assertEquals(1, Json.parse("1").asNumber().getBigDecimal().intValue());
     }
 }

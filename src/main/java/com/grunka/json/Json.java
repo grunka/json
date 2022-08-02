@@ -6,6 +6,7 @@ import com.grunka.json.type.JsonNumber;
 import com.grunka.json.type.JsonString;
 import com.grunka.json.type.JsonValue;
 
+import java.math.BigDecimal;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -62,7 +63,7 @@ public class Json {
             if (matcher.find()) {
                 String number = matcher.group();
                 position += number.length();
-                value = new JsonNumber(number);
+                value = new JsonNumber(new BigDecimal(number));
             } else {
                 throw new JsonParseException("Could not parse number");
             }
