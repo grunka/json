@@ -21,7 +21,7 @@ public class Json {
             position = skipWhileWhitespace(json, position);
             if (json.startsWith("null", position)) {
                 position += 4;
-                value = new JsonNull();
+                value = JsonNull.NULL;
             } else if (json.startsWith("true", position)) {
                 position += 4;
                 value = JsonBoolean.TRUE;
