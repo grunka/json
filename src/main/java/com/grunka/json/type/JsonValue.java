@@ -12,4 +12,12 @@ public class JsonValue {
     public JsonBoolean asBoolean() {
         return (JsonBoolean) this;
     }
+
+    public boolean isString() {
+        return false;
+    }
+
+    public JsonString asString() {
+        return (JsonString) this;
+    }
 }

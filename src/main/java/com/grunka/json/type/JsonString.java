@@ -11,4 +11,8 @@ public class JsonString extends JsonValue {
     public String toString() {
         return '"' + value.replaceAll("\"", "\\\\\"") + '"';
     }
+
+    public String getString() {
+        return value;
+    }
 }
