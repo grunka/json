@@ -3,6 +3,8 @@ package com.grunka.json;
 import com.grunka.json.type.JsonString;
 import org.junit.Test;
 
+import java.util.List;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -81,5 +83,25 @@ public class JsonTest {
         String json = "[1,\"a\",{\"Abc\":123,\"hello\":\"world\",\"list\":[true,false,true,null],\"null\":null,\"another one\":{}}]";
         String unparsed = Json.parse(json).toString();
         assertEquals(json, unparsed);
+    }
+
+    @Test
+    public void shouldStringifyObjects() {
+        assertEquals("null", Json.stringify(null));
+        assertEquals("\"hello\"", Json.stringify("hello"));
+        assertEquals("[\"hello\",\"world\"]", Json.stringify(List.of("hello", "world")));
+        assertEquals("{\"a\":\"ONE\",\"b\":\"TWO\",\"c\":3}", Json.stringify(new Thing("ONE", "TWO", 3)));
+    }
+
+    private static class Thing {
+        private final String a;
+        public final String b;
+        public final int c;
+
+        private Thing(String a, String b, int c) {
+            this.a = a;
+            this.b = b;
+            this.c = c;
+        }
     }
 }

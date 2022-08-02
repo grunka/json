@@ -8,7 +8,10 @@ import com.grunka.json.type.JsonObject;
 import com.grunka.json.type.JsonString;
 import com.grunka.json.type.JsonValue;
 
+import java.lang.reflect.Field;
 import java.math.BigDecimal;
+import java.util.Collection;
+import java.util.Map;
 import java.util.Stack;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -187,5 +190,58 @@ public class Json {
     private static class JsonObjectKey extends JsonValue {
         public JsonString key;
         public boolean seenColon = false;
+    }
+
+    public static JsonValue valuefy(Object input) {
+        if (input == null) {
+            return JsonNull.NULL;
+        }
+        if (input instanceof JsonValue) {
+            return (JsonValue) input;
+        }
+        if (input instanceof Boolean) {
+            return ((Boolean) input) ? JsonBoolean.TRUE : JsonBoolean.FALSE;
+        }
+        if (input instanceof BigDecimal) {
+            return new JsonNumber((BigDecimal) input);
+        }
+        if (input instanceof Number) {
+            return new JsonNumber(new BigDecimal(String.valueOf(input)));
+        }
+        if (input instanceof String) {
+            return new JsonString((String) input);
+        }
+        if (input instanceof Map) {
+            JsonObject object = new JsonObject();
+            ((Map<?, ?>) input).forEach((key, value) -> object.put(new JsonString(String.valueOf(key)), valuefy(value)));
+            return object;
+        }
+        if (input instanceof Collection) {
+            JsonArray array = new JsonArray();
+            ((Collection<?>) input).forEach(value -> array.add(valuefy(value)));
+            return array;
+        }
+        JsonObject object = new JsonObject();
+        for (Field field : input.getClass().getDeclaredFields()) {
+            boolean canAccess = field.canAccess(input);
+            if (!canAccess) {
+                field.setAccessible(true);
+            }
+            Object value;
+            try {
+                value = field.get(input);
+            } catch (IllegalAccessException e) {
+                throw new JsonStringifyException("Can not access field " + field.getName(), e);
+            }
+            object.put(new JsonString(field.getName()), valuefy(value));
+            if (!canAccess) {
+                field.setAccessible(false);
+            }
+        }
+        return object;
+    }
+
+    public static String stringify(Object input) {
+        return valuefy(input).toString();
     }
 }
