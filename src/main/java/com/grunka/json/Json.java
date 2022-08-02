@@ -2,8 +2,12 @@ package com.grunka.json;
 
 import com.grunka.json.type.JsonBoolean;
 import com.grunka.json.type.JsonNull;
+import com.grunka.json.type.JsonNumber;
 import com.grunka.json.type.JsonString;
 import com.grunka.json.type.JsonValue;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Json {
     public static JsonValue parse(String json) {
@@ -52,6 +56,16 @@ public class Json {
                 }
             }
             value = new JsonString(builder.toString());
+        } else if ("-0123456789".indexOf(json.charAt(position)) != -1) {
+            Pattern numberPattern = Pattern.compile("^-?(0|1[0-9]*)([.][0-9]+)?([eE][+-]?[0-9]+)?");
+            Matcher matcher = numberPattern.matcher(json.substring(position));
+            if (matcher.find()) {
+                String number = matcher.group();
+                position += number.length();
+                value = new JsonNumber(number);
+            } else {
+                throw new JsonParseException("Could not parse number");
+            }
         } else {
             throw new JsonParseException("Was expecting a JSON value");
         }

@@ -32,4 +32,20 @@ public class JsonTest {
         assertEquals("hello \"world\"", Json.parse("   \t\r\n  \"hello \\\"world\\\"\" \t\r   \n  ").asString().getString());
         assertEquals("hello\n\t\r world", Json.parse("\"hello\\n\\t\\r\\u0020world\"").asString().getString());
     }
+
+    @Test
+    public void shouldParseNumber() {
+        assertTrue(Json.parse("1").isNumber());
+        assertTrue(Json.parse("-1").isNumber());
+        assertTrue(Json.parse("-1.1").isNumber());
+        assertTrue(Json.parse("1.1").isNumber());
+        assertTrue(Json.parse("0.1").isNumber());
+        assertTrue(Json.parse("-0.1").isNumber());
+        assertTrue(Json.parse("-0.1e11").isNumber());
+        assertTrue(Json.parse("-0.1e+11").isNumber());
+        assertTrue(Json.parse("-0.1e-11").isNumber());
+        assertTrue(Json.parse("0.1e-11").isNumber());
+        assertTrue(Json.parse("0.1E11").isNumber());
+        assertEquals(1, Json.parse("1").asNumber().toInt());
+    }
 }

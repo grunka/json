@@ -20,4 +20,12 @@ public class JsonValue {
     public JsonString asString() {
         return (JsonString) this;
     }
+
+    public boolean isNumber() {
+        return false;
+    }
+
+    public JsonNumber asNumber() {
+        return (JsonNumber) this;
+    }
 }
