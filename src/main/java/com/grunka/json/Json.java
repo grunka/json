@@ -65,7 +65,7 @@ public class Json {
                     }
                 }
                 value = new JsonString(builder.toString());
-            } else if ("-0123456789".indexOf(json.charAt(position)) != -1) {
+            } else if (isNumeric(json.charAt(position))) {
                 Matcher matcher = NUMBER_PATTERN.matcher(json.substring(position));
                 if (matcher.find()) {
                     String number = matcher.group();
@@ -160,6 +160,13 @@ public class Json {
             }
         }
         throw new JsonParseException("Ended parsing unexpectedly");
+    }
+
+    private static boolean isNumeric(char c) {
+        return switch (c) {
+            case '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' -> true;
+            default -> false;
+        };
     }
 
     private static int skipWhileWhitespace(String json, int position) {
