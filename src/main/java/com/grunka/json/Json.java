@@ -21,10 +21,37 @@ public class Json {
             value = JsonBoolean.FALSE;
         } else if (json.charAt(position) == '"') {
             position++;
-            String contents = readRawString(position, json);
-            position += contents.length() + 1;
-            contents = JsonString.decodeRawString(contents);
-            value = new JsonString(contents);
+            StringBuilder builder = new StringBuilder();
+            boolean escape = false;
+            while (position < json.length()) {
+                char c = json.charAt(position++);
+                if (escape) {
+                    switch (c) {
+                        case '\\' -> builder.append('\\');
+                        case '/' -> builder.append('/');
+                        case '"' -> builder.append('"');
+                        case 'b' -> builder.append('\b');
+                        case 'f' -> builder.append('\f');
+                        case 'n' -> builder.append('\n');
+                        case 'r' -> builder.append('\r');
+                        case 't' -> builder.append('\t');
+                        case 'u' -> {
+                            builder.append(Character.toString(Integer.parseInt(json.substring(position, position + 4), 16)));
+                            position += 4;
+                        }
+                    }
+                    escape = false;
+                } else {
+                    if (c == '\\') {
+                        escape = true;
+                    } else if (c == '"') {
+                        break;
+                    } else {
+                        builder.append(c);
+                    }
+                }
+            }
+            value = new JsonString(builder.toString());
         } else {
             throw new JsonParseException("Was expecting a JSON value");
         }
@@ -33,14 +60,6 @@ public class Json {
             return value;
         }
         throw new JsonParseException("Did not read full json string");
-    }
-
-    private static String readRawString(int position, String json) {
-        int initialPosition = position;
-        while (json.charAt(position) != '"' || (json.charAt(position) == '"' && json.charAt(position - 1) == '\\')) {
-            position++;
-        }
-        return json.substring(initialPosition, position);
     }
 
     private static int skipWhileWhitespace(String json, int position) {
