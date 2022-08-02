@@ -2,6 +2,7 @@ package com.grunka.json;
 
 import com.grunka.json.type.JsonBoolean;
 import com.grunka.json.type.JsonNull;
+import com.grunka.json.type.JsonString;
 import com.grunka.json.type.JsonValue;
 
 public class Json {
@@ -18,6 +19,12 @@ public class Json {
         } else if (json.startsWith("false", position)) {
             position += 5;
             value = JsonBoolean.FALSE;
+        } else if (json.charAt(position) == '"') {
+            position++;
+            String contents = readRawString(position, json);
+            position += contents.length() + 1;
+            contents = JsonString.decodeRawString(contents);
+            value = new JsonString(contents);
         } else {
             throw new JsonParseException("Was expecting a JSON value");
         }
@@ -26,6 +33,14 @@ public class Json {
             return value;
         }
         throw new JsonParseException("Did not read full json string");
+    }
+
+    private static String readRawString(int position, String json) {
+        int initialPosition = position;
+        while (json.charAt(position) != '"' || (json.charAt(position) == '"' && json.charAt(position - 1) == '\\')) {
+            position++;
+        }
+        return json.substring(initialPosition, position);
     }
 
     private static int skipWhileWhitespace(String json, int position) {

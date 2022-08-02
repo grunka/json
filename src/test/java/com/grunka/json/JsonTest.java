@@ -29,6 +29,7 @@ public class JsonTest {
         assertTrue(Json.parse("\"hello \\\"world\\\"\"").isString());
         assertEquals("hello \"world\"", Json.parse("\"hello \\\"world\\\"\"").asString().getString());
         assertTrue(Json.parse("   \t\r\n  \"hello \\\"world\\\"\" \t\r   \n  ").isString());
-        assertEquals("hello world", Json.parse("   \t\r\n  \"hello \\\"world\\\"\" \t\r   \n  ").asString().getString());
+        assertEquals("hello \"world\"", Json.parse("   \t\r\n  \"hello \\\"world\\\"\" \t\r   \n  ").asString().getString());
+        assertEquals("hello\n\t\r world", Json.parse("\"hello\\n\\t\\r world\"").asString().getString());
     }
 }
