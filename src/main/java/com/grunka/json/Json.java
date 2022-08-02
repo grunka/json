@@ -16,6 +16,7 @@ import java.util.regex.Pattern;
 public class Json {
     public static JsonValue parse(String json) {
         int position = 0;
+        boolean expectsMore = false;
         Stack<JsonValue> stack = new Stack<>();
         while (position < json.length()) {
             JsonValue value = null;
@@ -33,7 +34,7 @@ public class Json {
                 position++;
                 StringBuilder builder = new StringBuilder();
                 boolean escape = false;
-                while (position < json.length()) {
+                while (true) {
                     char c = json.charAt(position++);
                     if (escape) {
                         switch (c) {
@@ -72,14 +73,24 @@ public class Json {
                 } else {
                     throw new JsonParseException("Could not parse number");
                 }
+            } else if (json.charAt(position) == ',') {
+                if (stack.isEmpty() || (!stack.peek().isArray() && !stack.peek().isObject())) {
+                    throw new JsonParseException("No array or object on stack");
+                }
+                expectsMore = true;
+                position++;
+            } else if (json.charAt(position) == ':') {
+                if (stack.isEmpty() || (!(stack.peek() instanceof JsonObjectKey))) {
+                    throw new JsonParseException("No object key on stack");
+                }
+                if (((JsonObjectKey) stack.peek()).seenColon) {
+                    throw new JsonParseException("Multiple colons encountered");
+                }
+                ((JsonObjectKey) stack.peek()).seenColon = true;
+                position++;
             } else if (json.charAt(position) == '[') {
                 position++;
                 stack.push(new JsonArray());
-            } else if (json.charAt(position) == ',') {
-                if (stack.isEmpty() || !stack.peek().isArray()) {
-                    throw new JsonParseException("No array on stack");
-                }
-                position++;
             } else if (json.charAt(position) == ']') {
                 if (stack.isEmpty() || !stack.peek().isArray()) {
                     throw new JsonParseException("End of array encountered without array on stack");
@@ -89,7 +100,18 @@ public class Json {
             } else if (json.charAt(position) == '{') {
                 position++;
                 stack.push(new JsonObject());
+                stack.push(new JsonObjectKey());
             } else if (json.charAt(position) == '}') {
+                if (stack.isEmpty()) {
+                    throw new JsonParseException("End of object encountered without object on stack");
+                }
+                JsonValue top = stack.pop();
+                if (!(top instanceof JsonObjectKey)) {
+                    throw new JsonParseException("Unexpected object on stack");
+                }
+                if (((JsonObjectKey) top).key != null) {
+                    throw new JsonParseException("Partial object entry encountered");
+                }
                 if (stack.isEmpty() || !stack.peek().isObject()) {
                     throw new JsonParseException("End of object encountered without object on stack");
                 }
@@ -101,13 +123,38 @@ public class Json {
             position = skipWhileWhitespace(json, position);
             if (stack.isEmpty()) {
                 if (position == json.length()) {
+                    if (expectsMore) {
+                        throw new JsonParseException("Dangling comma");
+                    }
                     return value;
                 } else {
-                    throw new JsonParseException("Did not read full json string");
+                    throw new JsonParseException("Did not fully read input");
                 }
             } else if (stack.peek().isArray()) {
                 if (value != null) {
                     stack.peek().asArray().add(value);
+                    expectsMore = false;
+                }
+            } else if (stack.peek() instanceof JsonObjectKey) {
+                if (value != null) {
+                    JsonObjectKey top = (JsonObjectKey) stack.peek();
+                    if (top.key == null) {
+                        if (!value.isString()) {
+                            throw new JsonParseException("Did not get string as key for object");
+                        }
+                        top.key = (JsonString) value;
+                    } else {
+                        JsonObjectKey poppedKey = (JsonObjectKey) stack.pop();
+                        if (stack.isEmpty() || !stack.peek().isObject()) {
+                            throw new JsonParseException("Object missing from stack when adding value");
+                        }
+                        if (!poppedKey.seenColon) {
+                            throw new JsonParseException("Missing colon");
+                        }
+                        stack.peek().asObject().put(poppedKey.key, value);
+                        stack.push(new JsonObjectKey());
+                        expectsMore = false;
+                    }
                 }
             }
         }
@@ -124,5 +171,10 @@ public class Json {
 
     private static boolean isWhitespace(char c) {
         return c == ' ' || c == '\n' || c == '\r' || c == '\t';
+    }
+
+    private static class JsonObjectKey extends JsonValue {
+        public JsonString key;
+        public boolean seenColon = false;
     }
 }

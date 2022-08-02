@@ -1,5 +1,6 @@
 package com.grunka.json;
 
+import com.grunka.json.type.JsonString;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -71,8 +72,9 @@ public class JsonTest {
     public void shouldParseObjects() {
         assertTrue(Json.parse("{}").isObject());
         assertTrue(Json.parse("{}").asObject().isEmpty());
+        assertTrue(Json.parse("{\"a\":\"A\"}").isObject());
+        assertEquals(new JsonString("A"), Json.parse("{\"a\":\"A\"}").asObject().get(new JsonString("a")));
     }
 
-    //TODO object parsing
     //TODO good error messages
 }
