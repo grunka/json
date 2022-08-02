@@ -7,6 +7,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class JsonString extends JsonValue {
+    private static final Pattern ESCAPE_CHARACTERS = Pattern.compile("[\"\b\f\n\r\t\\\\]");
     private final String value;
 
     public JsonString(String value) {
@@ -14,8 +15,7 @@ public class JsonString extends JsonValue {
     }
 
     private static String encodeString(String contents) {
-        Pattern specialCharacters = Pattern.compile("[\"\b\f\n\r\t\\\\]");
-        Matcher matcher = specialCharacters.matcher(contents);
+        Matcher matcher = ESCAPE_CHARACTERS.matcher(contents);
         return matcher.replaceAll(result -> {
             String replacement;
             switch (result.group()) {
