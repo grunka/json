@@ -14,6 +14,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Json {
+    private static final Pattern NUMBER_PATTERN = Pattern.compile("^-?(0|[1-9][0-9]*)([.][0-9]+)?([eE][+-]?[0-9]+)?");
+
     public static JsonValue parse(String json) {
         int position = 0;
         boolean expectsMore = false;
@@ -64,8 +66,7 @@ public class Json {
                 }
                 value = new JsonString(builder.toString());
             } else if ("-0123456789".indexOf(json.charAt(position)) != -1) {
-                Pattern numberPattern = Pattern.compile("^-?(0|[1-9][0-9]*)([.][0-9]+)?([eE][+-]?[0-9]+)?");
-                Matcher matcher = numberPattern.matcher(json.substring(position));
+                Matcher matcher = NUMBER_PATTERN.matcher(json.substring(position));
                 if (matcher.find()) {
                     String number = matcher.group();
                     position += number.length();
