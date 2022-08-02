@@ -50,5 +50,9 @@ public class JsonTest {
         assertEquals(1, Json.parse("1").asNumber().getBigDecimal().intValue());
     }
 
-
+    @Test
+    public void shouldParseArray() {
+        assertTrue(Json.parse("[]").isArray());
+        assertTrue(Json.parse("[]").asArray().isEmpty());
+    }
 }

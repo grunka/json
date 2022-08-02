@@ -16,6 +16,11 @@ public class JsonArray extends JsonValue implements List<JsonValue> {
     }
 
     @Override
+    public boolean isArray() {
+        return true;
+    }
+
+    @Override
     public int size() {
         return values.size();
     }

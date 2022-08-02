@@ -28,4 +28,12 @@ public class JsonValue {
     public JsonNumber asNumber() {
         return (JsonNumber) this;
     }
+
+    public boolean isArray() {
+        return false;
+    }
+
+    public JsonArray asArray() {
+        return (JsonArray) this;
+    }
 }
