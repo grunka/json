@@ -6,6 +6,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class JsonString extends JsonValue {
+    private static final Pattern ESCAPE_PATTERN = Pattern.compile("\\\\([\"\\\\/bfnrtu])([0-9a-f]{4})?");
     private final String value;
 
     public JsonString(String value) {
@@ -13,8 +14,7 @@ public class JsonString extends JsonValue {
     }
 
     public static String decodeRawString(String contents) {
-        Pattern escapePattern = Pattern.compile("\\\\([\"\\\\/bfnrtu])([0-9a-f]{4})?");
-        Matcher escaping = escapePattern.matcher(contents);
+        Matcher escaping = ESCAPE_PATTERN.matcher(contents);
         return escaping.replaceAll(result -> {
             String first = result.group(1);
             String second = result.group(2);
