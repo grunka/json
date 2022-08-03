@@ -215,14 +215,14 @@ public class Json {
         if (input instanceof Temporal) {
             return new JsonString(input.toString());
         }
-        if (input instanceof Map) {
+        if (input instanceof Map<?, ?> map) {
             JsonObject object = new JsonObject();
-            ((Map<?, ?>) input).forEach((key, value) -> object.put(new JsonString(String.valueOf(key)), valuefy(value)));
+            map.forEach((key, value) -> object.put(new JsonString(String.valueOf(key)), valuefy(value)));
             return object;
         }
-        if (input instanceof Collection) {
+        if (input instanceof Collection<?> collection) {
             JsonArray array = new JsonArray();
-            ((Collection<?>) input).forEach(value -> array.add(valuefy(value)));
+            collection.forEach(value -> array.add(valuefy(value)));
             return array;
         }
         JsonObject object = new JsonObject();
