@@ -13,6 +13,7 @@ import java.math.BigDecimal;
 import java.time.temporal.Temporal;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Stack;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -225,6 +226,13 @@ public class Json {
             collection.forEach(value -> array.add(valuefy(value)));
             return array;
         }
+        if (input instanceof Optional<?> optional) {
+            if (optional.isPresent()) {
+                return valuefy(optional.get());
+            } else {
+                return JsonNull.NULL;
+            }
+        }
         JsonObject object = new JsonObject();
         for (Field field : input.getClass().getDeclaredFields()) {
             boolean canAccess = field.canAccess(input);
@@ -238,7 +246,10 @@ public class Json {
                 throw new JsonStringifyException("Can not access field " + field.getName(), e);
             }
             if (value != null) {
-                object.put(new JsonString(field.getName()), valuefy(value));
+                JsonValue valuefied = valuefy(value);
+                if (!valuefied.isNull()) {
+                    object.put(new JsonString(field.getName()), valuefied);
+                }
             }
             if (!canAccess) {
                 field.setAccessible(false);
