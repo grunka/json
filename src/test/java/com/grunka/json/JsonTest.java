@@ -6,6 +6,7 @@ import org.junit.Test;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -92,22 +93,27 @@ public class JsonTest {
         assertEquals("null", Json.stringify(null));
         assertEquals("\"hello\"", Json.stringify("hello"));
         assertEquals("[\"hello\",\"world\"]", Json.stringify(List.of("hello", "world")));
-        assertEquals("{\"a\":\"ONE\",\"b\":\"TWO\",\"c\":3,\"e\":\"2022-08-03T19:23:00Z\"}", Json.stringify(new Thing("ONE", "TWO", 3, null, Instant.parse("2022-08-03T19:23:00Z"))));
+        assertEquals("{\"a\":\"ONE\",\"b\":\"TWO\",\"c\":3,\"e\":\"2022-08-03T19:23:00Z\",\"g\":\"G\"}", Json.stringify(new Thing("ONE", "TWO", 3, null, Instant.parse("2022-08-03T19:23:00Z"), Optional.empty(), Optional.of("G"))));
     }
 
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
     private static class Thing {
         private final String a;
         public final String b;
         public final int c;
         public final BigDecimal d;
         public final Instant e;
+        public final Optional<String> f;
+        public final Optional<String> g;
 
-        private Thing(String a, String b, int c, BigDecimal d, Instant e) {
+        private Thing(String a, String b, int c, BigDecimal d, Instant e, Optional<String> f, Optional<String> g) {
             this.a = a;
             this.b = b;
             this.c = c;
             this.d = d;
             this.e = e;
+            this.f = f;
+            this.g = g;
         }
     }
 }
