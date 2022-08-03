@@ -10,6 +10,7 @@ import com.grunka.json.type.JsonValue;
 
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
+import java.time.temporal.Temporal;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Stack;
@@ -211,6 +212,9 @@ public class Json {
         if (input instanceof String) {
             return new JsonString((String) input);
         }
+        if (input instanceof Temporal) {
+            return new JsonString(input.toString());
+        }
         if (input instanceof Map) {
             JsonObject object = new JsonObject();
             ((Map<?, ?>) input).forEach((key, value) -> object.put(new JsonString(String.valueOf(key)), valuefy(value)));
@@ -233,7 +237,9 @@ public class Json {
             } catch (IllegalAccessException e) {
                 throw new JsonStringifyException("Can not access field " + field.getName(), e);
             }
-            object.put(new JsonString(field.getName()), valuefy(value));
+            if (value != null) {
+                object.put(new JsonString(field.getName()), valuefy(value));
+            }
             if (!canAccess) {
                 field.setAccessible(false);
             }

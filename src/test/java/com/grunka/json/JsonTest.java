@@ -3,6 +3,8 @@ package com.grunka.json;
 import com.grunka.json.type.JsonString;
 import org.junit.Test;
 
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -90,18 +92,22 @@ public class JsonTest {
         assertEquals("null", Json.stringify(null));
         assertEquals("\"hello\"", Json.stringify("hello"));
         assertEquals("[\"hello\",\"world\"]", Json.stringify(List.of("hello", "world")));
-        assertEquals("{\"a\":\"ONE\",\"b\":\"TWO\",\"c\":3}", Json.stringify(new Thing("ONE", "TWO", 3)));
+        assertEquals("{\"a\":\"ONE\",\"b\":\"TWO\",\"c\":3,\"e\":\"2022-08-03T19:23:00Z\"}", Json.stringify(new Thing("ONE", "TWO", 3, null, Instant.parse("2022-08-03T19:23:00Z"))));
     }
 
     private static class Thing {
         private final String a;
         public final String b;
         public final int c;
+        public final BigDecimal d;
+        public final Instant e;
 
-        private Thing(String a, String b, int c) {
+        private Thing(String a, String b, int c, BigDecimal d, Instant e) {
             this.a = a;
             this.b = b;
             this.c = c;
+            this.d = d;
+            this.e = e;
         }
     }
 }
