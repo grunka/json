@@ -31,6 +31,7 @@ public class Json {
         while (position < json.length()) {
             JsonValue value = null;
             position = skipWhileWhitespace(json, position);
+            char firstCharacter = json.charAt(position);
             if (json.startsWith("null", position)) {
                 position += 4;
                 value = JsonNull.NULL;
@@ -40,7 +41,7 @@ public class Json {
             } else if (json.startsWith("false", position)) {
                 position += 5;
                 value = JsonBoolean.FALSE;
-            } else if (json.charAt(position) == '"') {
+            } else if (firstCharacter == '"') {
                 position++;
                 StringBuilder builder = new StringBuilder();
                 boolean escape = false;
@@ -73,7 +74,7 @@ public class Json {
                     }
                 }
                 value = new JsonString(builder.toString());
-            } else if (isNumeric(json.charAt(position))) {
+            } else if (isNumeric(firstCharacter)) {
                 Matcher matcher = NUMBER_PATTERN.matcher(json.substring(position));
                 if (matcher.find()) {
                     String number = matcher.group();
@@ -82,13 +83,13 @@ public class Json {
                 } else {
                     throw new JsonParseException("Could not parse number");
                 }
-            } else if (json.charAt(position) == ',') {
+            } else if (firstCharacter == ',') {
                 if (stack.isEmpty() || (!stack.peek().isArray() && !(stack.peek() instanceof JsonObjectKey))) {
                     throw new JsonParseException("No array or object on stack");
                 }
                 expectsMore = true;
                 position++;
-            } else if (json.charAt(position) == ':') {
+            } else if (firstCharacter == ':') {
                 if (stack.isEmpty() || (!(stack.peek() instanceof JsonObjectKey))) {
                     throw new JsonParseException("No object key on stack");
                 }
@@ -97,20 +98,20 @@ public class Json {
                 }
                 ((JsonObjectKey) stack.peek()).seenColon = true;
                 position++;
-            } else if (json.charAt(position) == '[') {
+            } else if (firstCharacter == '[') {
                 position++;
                 stack.push(new JsonArray());
-            } else if (json.charAt(position) == ']') {
+            } else if (firstCharacter == ']') {
                 if (stack.isEmpty() || !stack.peek().isArray()) {
                     throw new JsonParseException("End of array encountered without array on stack");
                 }
                 position++;
                 value = stack.pop();
-            } else if (json.charAt(position) == '{') {
+            } else if (firstCharacter == '{') {
                 position++;
                 stack.push(new JsonObject());
                 stack.push(new JsonObjectKey());
-            } else if (json.charAt(position) == '}') {
+            } else if (firstCharacter == '}') {
                 if (stack.isEmpty()) {
                     throw new JsonParseException("End of object encountered without object on stack");
                 }
