@@ -263,7 +263,7 @@ public class Json {
 
     public static String stringify(JsonValue value) {
         StringBuilder output = new StringBuilder();
-        if (value.isNull()) {
+        if (value == null || value.isNull()) {
             output.append("null");
         } else if (value.isString()) {
             output.append('"');
