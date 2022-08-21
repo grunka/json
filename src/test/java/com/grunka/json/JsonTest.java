@@ -78,7 +78,7 @@ public class JsonTest {
         assertTrue(Json.parse("{}").isObject());
         assertTrue(Json.parse("{}").asObject().isEmpty());
         assertTrue(Json.parse("{\"a\":\"A\"}").isObject());
-        assertEquals(new JsonString("A"), Json.parse("{\"a\":\"A\"}").asObject().get(new JsonString("a")));
+        assertEquals(new JsonString("A"), Json.parse("{\"a\":\"A\"}").asObject().get("a"));
     }
 
     @Test

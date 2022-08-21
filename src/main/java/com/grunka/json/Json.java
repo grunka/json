@@ -165,7 +165,7 @@ public class Json {
                         if (!poppedKey.seenColon) {
                             throw new JsonParseException("Missing colon");
                         }
-                        stack.peek().asObject().put(poppedKey.key, value);
+                        stack.peek().asObject().put(poppedKey.key.getString(), value);
                         stack.push(new JsonObjectKey());
                         expectsMore = false;
                     }
@@ -223,7 +223,7 @@ public class Json {
         }
         if (input instanceof Map<?, ?> map) {
             JsonObject object = new JsonObject();
-            map.forEach((key, value) -> object.put(new JsonString(String.valueOf(key)), valuefy(value)));
+            map.forEach((key, value) -> object.put(String.valueOf(key), valuefy(value)));
             return object;
         }
         if (input instanceof Collection<?> collection) {
@@ -253,7 +253,7 @@ public class Json {
             if (value != null) {
                 JsonValue valuefied = valuefy(value);
                 if (!valuefied.isNull()) {
-                    object.put(new JsonString(field.getName()), valuefied);
+                    object.put(field.getName(), valuefied);
                 }
             }
             if (!canAccess) {
@@ -299,11 +299,11 @@ public class Json {
                     queue.add(arrayPosition, "]");
                 } else if (value.isObject()) {
                     output.append("{");
-                    Iterator<Map.Entry<JsonString, JsonValue>> iterator = value.asObject().entrySet().iterator();
+                    Iterator<Map.Entry<String, JsonValue>> iterator = value.asObject().entrySet().iterator();
                     int mapPosition = 0;
                     while (iterator.hasNext()) {
-                        Map.Entry<JsonString, JsonValue> entry = iterator.next();
-                        queue.add(mapPosition++, '"' + encodeString(entry.getKey().getString()) + "\":");
+                        Map.Entry<String, JsonValue> entry = iterator.next();
+                        queue.add(mapPosition++, '"' + encodeString(entry.getKey()) + "\":");
                         queue.add(mapPosition++, entry.getValue());
                         if (iterator.hasNext()) {
                             queue.add(mapPosition++, ",");

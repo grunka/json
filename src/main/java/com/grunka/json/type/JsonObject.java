@@ -8,8 +8,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-public class JsonObject extends JsonValue implements Map<JsonString, JsonValue> {
-    private final Map<JsonString, JsonValue> values = new LinkedHashMap<>();
+public class JsonObject extends JsonValue implements Map<String, JsonValue> {
+    private final Map<String, JsonValue> values = new LinkedHashMap<>();
 
     @Override
     public String toString() {
@@ -47,7 +47,7 @@ public class JsonObject extends JsonValue implements Map<JsonString, JsonValue> 
     }
 
     @Override
-    public JsonValue put(JsonString key, JsonValue value) {
+    public JsonValue put(String key, JsonValue value) {
         return values.put(key, value);
     }
 
@@ -57,7 +57,7 @@ public class JsonObject extends JsonValue implements Map<JsonString, JsonValue> 
     }
 
     @Override
-    public void putAll(Map<? extends JsonString, ? extends JsonValue> m) {
+    public void putAll(Map<? extends String, ? extends JsonValue> m) {
         values.putAll(m);
     }
 
@@ -67,7 +67,7 @@ public class JsonObject extends JsonValue implements Map<JsonString, JsonValue> 
     }
 
     @Override
-    public Set<JsonString> keySet() {
+    public Set<String> keySet() {
         return values.keySet();
     }
 
@@ -77,7 +77,7 @@ public class JsonObject extends JsonValue implements Map<JsonString, JsonValue> 
     }
 
     @Override
-    public Set<Entry<JsonString, JsonValue>> entrySet() {
+    public Set<Entry<String, JsonValue>> entrySet() {
         return values.entrySet();
     }
 
