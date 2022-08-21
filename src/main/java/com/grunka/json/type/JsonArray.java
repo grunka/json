@@ -1,19 +1,20 @@
 package com.grunka.json.type;
 
+import com.grunka.json.Json;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 public class JsonArray extends JsonValue implements List<JsonValue> {
     private final List<JsonValue> values = new ArrayList<>();
 
     @Override
     public String toString() {
-        return "[" + values.stream().map(Object::toString).collect(Collectors.joining(",")) + "]";
+        return Json.stringify(this);
     }
 
     @Override

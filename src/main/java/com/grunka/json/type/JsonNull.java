@@ -1,5 +1,7 @@
 package com.grunka.json.type;
 
+import com.grunka.json.Json;
+
 public class JsonNull extends JsonValue {
     public static final JsonNull NULL = new JsonNull();
 
@@ -13,6 +15,6 @@ public class JsonNull extends JsonValue {
 
     @Override
     public String toString() {
-        return "null";
+        return Json.stringify(this);
     }
 }

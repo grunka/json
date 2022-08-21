@@ -17,9 +17,11 @@ import java.util.Optional;
 import java.util.Stack;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class Json {
     private static final Pattern NUMBER_PATTERN = Pattern.compile("^-?(0|[1-9][0-9]*)([.][0-9]+)?([eE][+-]?[0-9]+)?");
+    private static final Pattern STRING_ESCAPE_CHARACTERS = Pattern.compile("[\"\b\f\n\r\t\\\\]");
 
     private Json() {
     }
@@ -259,7 +261,57 @@ public class Json {
         return object;
     }
 
+    public static String stringify(JsonValue value) {
+        StringBuilder output = new StringBuilder();
+        if (value.isNull()) {
+            output.append("null");
+        } else if (value.isString()) {
+            output.append('"');
+            output.append(encodeString(value.asString().getString()));
+            output.append('"');
+        } else if (value.isBoolean()) {
+            if (value.asBoolean().isTrue()) {
+                output.append("true");
+            } else {
+                output.append("false");
+            }
+        } else if (value.isNumber()) {
+            output.append(value.asNumber().getBigDecimal().toPlainString());
+        } else if (value.isArray()) {
+            output.append("[");
+            output.append(value.asArray().stream().map(Object::toString).collect(Collectors.joining(",")));
+            output.append("]");
+        } else if (value.isObject()) {
+            output.append("{");
+            output.append(value.asObject().entrySet().stream()
+                    .map(e -> e.getKey().toString() + ":" + e.getValue().toString())
+                    .collect(Collectors.joining(",")));
+            output.append("}");
+        } else {
+            throw new JsonStringifyException("Could not convert " + value + " to string");
+        }
+        return output.toString();
+    }
+
     public static String stringify(Object input) {
-        return valuefy(input).toString();
+        return stringify(valuefy(input));
+    }
+
+    private static String encodeString(String contents) {
+        Matcher matcher = STRING_ESCAPE_CHARACTERS.matcher(contents);
+        return matcher.replaceAll(result -> {
+            String replacement;
+            switch (result.group()) {
+                case "\"" -> replacement = "\\\\\"";
+                case "\b" -> replacement = "\\\\b";
+                case "\f" -> replacement = "\\\\f";
+                case "\n" -> replacement = "\\\\n";
+                case "\r" -> replacement = "\\\\r";
+                case "\t" -> replacement = "\\\\t";
+                case "\\" -> replacement = "\\\\\\\\";
+                default -> throw new JsonStringifyException("Unrecognized replacement");
+            }
+            return replacement;
+        });
     }
 }

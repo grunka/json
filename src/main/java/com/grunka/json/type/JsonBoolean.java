@@ -1,5 +1,7 @@
 package com.grunka.json.type;
 
+import com.grunka.json.Json;
+
 import java.util.Objects;
 
 public class JsonBoolean extends JsonValue {
@@ -26,7 +28,7 @@ public class JsonBoolean extends JsonValue {
 
     @Override
     public String toString() {
-        return Boolean.toString(value);
+        return Json.stringify(this);
     }
 
     @Override

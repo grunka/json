@@ -1,22 +1,19 @@
 package com.grunka.json.type;
 
+import com.grunka.json.Json;
+
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public class JsonObject extends JsonValue implements Map<JsonString, JsonValue> {
     private final Map<JsonString, JsonValue> values = new LinkedHashMap<>();
 
     @Override
     public String toString() {
-        return "{" +
-                values.entrySet().stream()
-                        .map(e -> e.getKey().toString() + ":" + e.getValue().toString())
-                        .collect(Collectors.joining(",")) +
-                "}";
+        return Json.stringify(this);
     }
 
     @Override
