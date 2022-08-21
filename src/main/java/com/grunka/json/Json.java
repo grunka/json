@@ -12,12 +12,12 @@ import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.time.temporal.Temporal;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Stack;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public class Json {
     private static final Pattern NUMBER_PATTERN = Pattern.compile("^-?(0|[1-9][0-9]*)([.][0-9]+)?([eE][+-]?[0-9]+)?");
@@ -266,9 +266,7 @@ public class Json {
         if (value == null || value.isNull()) {
             output.append("null");
         } else if (value.isString()) {
-            output.append('"');
-            output.append(encodeString(value.asString().getString()));
-            output.append('"');
+            appendString(output, value.asString());
         } else if (value.isBoolean()) {
             if (value.asBoolean().isTrue()) {
                 output.append("true");
@@ -279,13 +277,26 @@ public class Json {
             output.append(value.asNumber().getBigDecimal().toPlainString());
         } else if (value.isArray()) {
             output.append("[");
-            output.append(value.asArray().stream().map(Object::toString).collect(Collectors.joining(",")));
+            Iterator<JsonValue> iterator = value.asArray().iterator();
+            while (iterator.hasNext()) {
+                output.append(stringify(iterator.next()));
+                if (iterator.hasNext()) {
+                    output.append(",");
+                }
+            }
             output.append("]");
         } else if (value.isObject()) {
             output.append("{");
-            output.append(value.asObject().entrySet().stream()
-                    .map(e -> e.getKey().toString() + ":" + e.getValue().toString())
-                    .collect(Collectors.joining(",")));
+            Iterator<Map.Entry<JsonString, JsonValue>> iterator = value.asObject().entrySet().iterator();
+            while (iterator.hasNext()) {
+                Map.Entry<JsonString, JsonValue> entry = iterator.next();
+                appendString(output, entry.getKey());
+                output.append(":");
+                output.append(stringify(entry.getValue()));
+                if (iterator.hasNext()) {
+                    output.append(",");
+                }
+            }
             output.append("}");
         } else {
             throw new JsonStringifyException("Could not convert " + value + " to string");
@@ -295,6 +306,12 @@ public class Json {
 
     public static String stringify(Object input) {
         return stringify(valuefy(input));
+    }
+
+    private static void appendString(StringBuilder output, JsonString jsonString) {
+        output.append('"');
+        output.append(encodeString(jsonString.getString()));
+        output.append('"');
     }
 
     private static String encodeString(String contents) {
