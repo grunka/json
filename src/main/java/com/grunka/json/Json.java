@@ -261,8 +261,7 @@ public class Json {
         return object;
     }
 
-    public static String stringify(JsonValue value) {
-        StringBuilder output = new StringBuilder();
+    private static void stringify(StringBuilder output, JsonValue value) {
         if (value == null || value.isNull()) {
             output.append("null");
         } else if (value.isString()) {
@@ -279,7 +278,7 @@ public class Json {
             output.append("[");
             Iterator<JsonValue> iterator = value.asArray().iterator();
             while (iterator.hasNext()) {
-                output.append(stringify(iterator.next()));
+                stringify(output, iterator.next());
                 if (iterator.hasNext()) {
                     output.append(",");
                 }
@@ -292,7 +291,7 @@ public class Json {
                 Map.Entry<JsonString, JsonValue> entry = iterator.next();
                 appendString(output, entry.getKey());
                 output.append(":");
-                output.append(stringify(entry.getValue()));
+                stringify(output, entry.getValue());
                 if (iterator.hasNext()) {
                     output.append(",");
                 }
@@ -301,11 +300,12 @@ public class Json {
         } else {
             throw new JsonStringifyException("Could not convert " + value + " to string");
         }
-        return output.toString();
     }
 
     public static String stringify(Object input) {
-        return stringify(valuefy(input));
+        StringBuilder output = new StringBuilder();
+        stringify(output, valuefy(input));
+        return output.toString();
     }
 
     private static void appendString(StringBuilder output, JsonString jsonString) {
