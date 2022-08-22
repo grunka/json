@@ -42,21 +42,7 @@ public class Json {
     public static JsonValue parse(String json) {
         State state = new State(PARSER_PATTERN.matcher(json));
         while (state.position < json.length()) {
-            boolean found;
-            if (state.needsParserShift) {
-                found = state.parser.find(state.position);
-                state.needsParserShift = false;
-            } else {
-                found = state.parser.find();
-            }
-            if (!found) {
-                throw new JsonParseException("Did not find any JSON content after position " + state.position);
-            }
-            if (state.parser.start() != state.position) {
-                throw new JsonParseException("Found non JSON content at position " + state.position);
-            }
-            String match = state.parser.group(1);
-            state.position += state.parser.group().length();
+            String match = nextMatch(state);
             JsonValue value = switch (match) {
                 case "null" -> JsonNull.NULL;
                 case "true" -> JsonBoolean.TRUE;
@@ -147,6 +133,25 @@ public class Json {
             }
         }
         throw new JsonParseException("Reached end of input without parsing any value");
+    }
+
+    private static String nextMatch(State state) {
+        boolean found;
+        if (state.needsParserShift) {
+            found = state.parser.find(state.position);
+            state.needsParserShift = false;
+        } else {
+            found = state.parser.find();
+        }
+        if (!found) {
+            throw new JsonParseException("Did not find any JSON content after position " + state.position);
+        }
+        if (state.parser.start() != state.position) {
+            throw new JsonParseException("Found non JSON content at position " + state.position);
+        }
+        String match = state.parser.group(1);
+        state.position += state.parser.group().length();
+        return match;
     }
 
     private static JsonValue handleEndObject(Stack<JsonValue> stack, Matcher parser) {
