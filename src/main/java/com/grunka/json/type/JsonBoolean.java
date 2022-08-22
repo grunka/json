@@ -1,7 +1,5 @@
 package com.grunka.json.type;
 
-import com.grunka.json.Json;
-
 import java.util.Objects;
 
 public class JsonBoolean extends JsonValue {
@@ -27,11 +25,6 @@ public class JsonBoolean extends JsonValue {
     }
 
     @Override
-    public String toString() {
-        return Json.stringify(this);
-    }
-
-    @Override
     public boolean equals(Object o) {
         if (this == o) {
             return true;
@@ -46,5 +39,10 @@ public class JsonBoolean extends JsonValue {
     @Override
     public int hashCode() {
         return Objects.hash(value);
+    }
+
+    @Override
+    public String toString() {
+        return value ? "true" : "false";
     }
 }

@@ -41,6 +41,10 @@ public class JsonValue {
         return false;
     }
 
+    public boolean isPrimitive() {
+        return isNull() || isBoolean() || isNumber() || isString();
+    }
+
     public JsonObject asObject() {
         return (JsonObject) this;
     }

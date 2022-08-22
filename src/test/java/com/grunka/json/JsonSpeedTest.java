@@ -12,12 +12,48 @@ import org.junit.Test;
 import java.math.BigDecimal;
 import java.util.Random;
 
+import static org.junit.Assert.assertEquals;
+
 public class JsonSpeedTest {
     @Test
-    public void shouldParseQuickly() {
+    public void shouldParseQuickly() throws InterruptedException {
+        Thread.sleep(10_000);
         Random random = new Random(11);
         JsonValue root = fill(random, 0, new JsonObject());
         System.out.println("root = " + root);
+
+        System.out.println("generating");
+        JsonArray originalArray = makeArray(random, 500_000, 1);
+
+        System.out.println("toString");
+        long beforeToString = System.currentTimeMillis();
+        String arrayJson = originalArray.toString();
+        long toStringDuration = System.currentTimeMillis() - beforeToString;
+        System.out.println("toStringDuration = " + toStringDuration);
+
+        System.out.println("parse");
+        long beforeParse = System.currentTimeMillis();
+        JsonValue parsedArray = Json.parse(arrayJson);
+        long parseDuration = System.currentTimeMillis() - beforeParse;
+        System.out.println("parseDuration = " + parseDuration);
+
+        System.out.println("array = " + arrayJson.length());
+        assertEquals(originalArray, parsedArray);
+    }
+
+    private static JsonArray makeArray(Random random, int size, int depth) {
+        JsonArray array = new JsonArray();
+        if (depth < 1) {
+            return array;
+        }
+        for (int i = 0; i < size; i++) {
+            if (random.nextDouble() < 0.5) {
+                array.add(new JsonNumber(BigDecimal.valueOf(random.nextDouble())));
+            } else {
+                array.add(makeArray(random, size, depth - 1));
+            }
+        }
+        return array;
     }
 
     private JsonValue fill(Random random, int depth, JsonValue value) {

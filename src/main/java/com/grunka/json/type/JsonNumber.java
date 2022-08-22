@@ -1,7 +1,5 @@
 package com.grunka.json.type;
 
-import com.grunka.json.Json;
-
 import java.math.BigDecimal;
 import java.util.Objects;
 
@@ -23,7 +21,7 @@ public class JsonNumber extends JsonValue implements Comparable<JsonNumber> {
 
     @Override
     public String toString() {
-        return Json.stringify(this);
+        return number.toPlainString();
     }
 
     @Override

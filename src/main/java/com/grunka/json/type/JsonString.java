@@ -1,10 +1,14 @@
 package com.grunka.json.type;
 
-import com.grunka.json.Json;
+import com.grunka.json.JsonStringifyException;
 
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class JsonString extends JsonValue {
+    private static final Pattern STRING_ESCAPE_CHARACTERS = Pattern.compile("[\"\b\f\n\r\t\\\\]");
+
     private final String value;
 
     public JsonString(String value) {
@@ -13,7 +17,25 @@ public class JsonString extends JsonValue {
 
     @Override
     public String toString() {
-        return Json.stringify(this);
+        return '"' + encodeString(value) + '"';
+    }
+
+    private static String encodeString(String contents) {
+        Matcher matcher = STRING_ESCAPE_CHARACTERS.matcher(contents);
+        return matcher.replaceAll(result -> {
+            String replacement;
+            switch (result.group()) {
+                case "\"" -> replacement = "\\\\\"";
+                case "\b" -> replacement = "\\\\b";
+                case "\f" -> replacement = "\\\\f";
+                case "\n" -> replacement = "\\\\n";
+                case "\r" -> replacement = "\\\\r";
+                case "\t" -> replacement = "\\\\t";
+                case "\\" -> replacement = "\\\\\\\\";
+                default -> throw new JsonStringifyException("Unrecognized replacement");
+            }
+            return replacement;
+        });
     }
 
     public String getString() {
