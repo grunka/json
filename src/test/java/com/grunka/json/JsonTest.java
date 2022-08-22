@@ -10,8 +10,55 @@ import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class JsonTest {
+    @Test
+    public void shouldFailInvalidContent() {
+        try {
+            Json.parse("{true}");
+            fail();
+        } catch (JsonParseException e) {
+            System.out.println(e.getMessage());
+        }
+        try {
+            Json.parse("{true:true}");
+            fail();
+        } catch (JsonParseException e) {
+            System.out.println(e.getMessage());
+        }
+        try {
+            Json.parse("{\"key\":}");
+            fail();
+        } catch (JsonParseException e) {
+            System.out.println(e.getMessage());
+        }
+        try {
+            Json.parse("}{");
+            fail();
+        } catch (JsonParseException e) {
+            System.out.println(e.getMessage());
+        }
+        try {
+            Json.parse("[[]");
+            fail();
+        } catch (JsonParseException e) {
+            System.out.println(e.getMessage());
+        }
+        try {
+            Json.parse("]");
+            fail();
+        } catch (JsonParseException e) {
+            System.out.println(e.getMessage());
+        }
+        try {
+            Json.parse("abc []");
+            fail();
+        } catch (JsonParseException e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
     @Test
     public void shouldParseNull() {
         assertTrue(Json.parse("null").isNull());
