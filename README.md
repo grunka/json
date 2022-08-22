@@ -15,5 +15,5 @@ There are many much more tested, used, advanced, and customizable libraries for 
 
 ## TODOs
 - [ ] Error messages that are more clear about how the parsing failed
-- [ ] Check if the parsing performance is horrible or not
+- [x] ~~Check if the parsing performance is horrible or not~~
 - [x] ~~Non-recursive toStrings~~
