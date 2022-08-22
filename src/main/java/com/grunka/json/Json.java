@@ -27,85 +27,57 @@ public class Json {
     private Json() {
     }
 
-    public static JsonValue parse(String json) {
+    private static class State {
         int position = 0;
         boolean expectsMore = false;
         boolean needsParserShift = false;
-        Stack<JsonValue> stack = new Stack<>();
-        Matcher parser = PARSER_PATTERN.matcher(json);
-        while (position < json.length()) {
+        final Stack<JsonValue> stack = new Stack<>();
+        final Matcher parser;
+
+        private State(Matcher parser) {
+            this.parser = parser;
+        }
+    }
+
+    public static JsonValue parse(String json) {
+        State state = new State(PARSER_PATTERN.matcher(json));
+        while (state.position < json.length()) {
             boolean found;
-            if (needsParserShift) {
-                found = parser.find(position);
-                needsParserShift = false;
+            if (state.needsParserShift) {
+                found = state.parser.find(state.position);
+                state.needsParserShift = false;
             } else {
-                found = parser.find();
+                found = state.parser.find();
             }
             if (!found) {
-                throw new JsonParseException("Did not find any JSON content after position " + position);
+                throw new JsonParseException("Did not find any JSON content after position " + state.position);
             }
-            if (parser.start() != position) {
-                throw new JsonParseException("Found non JSON content at position " + position);
+            if (state.parser.start() != state.position) {
+                throw new JsonParseException("Found non JSON content at position " + state.position);
             }
-            String match = parser.group(1);
-            position += parser.group().length();
+            String match = state.parser.group(1);
+            state.position += state.parser.group().length();
             JsonValue value = switch (match) {
                 case "null" -> JsonNull.NULL;
                 case "true" -> JsonBoolean.TRUE;
                 case "false" -> JsonBoolean.FALSE;
                 case "," -> {
-                    if (stack.isEmpty() || (!stack.peek().isArray() && !(stack.peek() instanceof JsonObjectKey))) {
-                        throw new JsonParseException("Found comma at position " + parser.start(1) + " while not parsing an array or an object");
+                    if (state.stack.isEmpty() || (!state.stack.peek().isArray() && !(state.stack.peek() instanceof JsonObjectKey))) {
+                        throw new JsonParseException("Found comma at position " + state.parser.start(1) + " while not parsing an array or an object");
                     }
-                    expectsMore = true;
+                    state.expectsMore = true;
                     yield null;
                 }
-                case ":" -> {
-                    if (stack.isEmpty() || (!(stack.peek() instanceof JsonObjectKey))) {
-                        throw new JsonParseException("Found colon at position " + parser.start(1) + " while not parsing an object");
-                    }
-                    if (((JsonObjectKey) stack.peek()).seenColon) {
-                        throw new JsonParseException("Multiple colons at position " + parser.start(1));
-                    }
-                    ((JsonObjectKey) stack.peek()).seenColon = true;
-                    yield null;
-                }
-                case "[" -> {
-                    stack.push(new JsonArray());
-                    yield null;
-                }
-                case "]" -> {
-                    if (stack.isEmpty() || !stack.peek().isArray()) {
-                        throw new JsonParseException("End of array encountered at position " + parser.start(1) + " while not parsing an array");
-                    }
-                    yield stack.pop();
-                }
-                case "{" -> {
-                    stack.push(new JsonObject());
-                    stack.push(new JsonObjectKey());
-                    yield null;
-                }
-                case "}" -> {
-                    if (stack.isEmpty()) {
-                        throw new JsonParseException("End of object encountered at position " + parser.start(1) + " without having started parsing one");
-                    }
-                    JsonValue top = stack.pop();
-                    if (!(top instanceof JsonObjectKey)) {
-                        throw new JsonParseException("End of object encountered at position " + parser.start(1) + " while parsing something else");
-                    }
-                    if (((JsonObjectKey) top).key != null) {
-                        throw new JsonParseException("End of object encountered at position " + parser.start(1) + " while expecting a value");
-                    }
-                    if (stack.isEmpty() || !stack.peek().isObject()) {
-                        throw new JsonParseException("End of object encountered at position " + parser.start(1) + " without object on parsing stack");
-                    }
-                    yield stack.pop();
-                }
+                case ":" -> handleColon(state.stack, state.parser);
+                case "[" -> handleStartArray(state.stack);
+                case "]" -> handleEndArray(state.stack, state.parser);
+                case "{" -> handleStartObject(state.stack);
+                case "}" -> handleEndObject(state.stack, state.parser);
                 case "\"" -> {
                     StringBuilder builder = new StringBuilder();
                     boolean escape = false;
                     while (true) {
-                        char c = json.charAt(position++);
+                        char c = json.charAt(state.position += 1);
                         if (escape) {
                             switch (c) {
                                 case '\\' -> builder.append('\\');
@@ -117,8 +89,8 @@ public class Json {
                                 case 'r' -> builder.append('\r');
                                 case 't' -> builder.append('\t');
                                 case 'u' -> {
-                                    builder.append(Character.toString(Integer.parseInt(json.substring(position, position + 4), 16)));
-                                    position += 4;
+                                    builder.append(Character.toString(Integer.parseInt(json.substring(state.position, state.position + 4), 16)));
+                                    state.position += 4;
                                 }
                             }
                             escape = false;
@@ -132,49 +104,95 @@ public class Json {
                             }
                         }
                     }
-                    needsParserShift = true;
+                    state.needsParserShift = true;
                     yield new JsonString(builder.toString());
                 }
                 default -> new JsonNumber(new BigDecimal(match));
             };
-            if (stack.isEmpty()) {
-                position = skipWhileWhitespace(json, position);
-                if (position == json.length()) {
-                    if (expectsMore) {
+            if (state.stack.isEmpty()) {
+                state.position = skipWhileWhitespace(json, state.position);
+                if (state.position == json.length()) {
+                    if (state.expectsMore) {
                         throw new JsonParseException("Parsing ended with a dangling comma");
                     }
                     return value;
                 } else {
                     throw new JsonParseException("Non parsable data found at end of input");
                 }
-            } else if (stack.peek().isArray()) {
+            } else if (state.stack.peek().isArray()) {
                 if (value != null) {
-                    stack.peek().asArray().add(value);
-                    expectsMore = false;
+                    state.stack.peek().asArray().add(value);
+                    state.expectsMore = false;
                 }
-            } else if (stack.peek() instanceof JsonObjectKey top) {
+            } else if (state.stack.peek() instanceof JsonObjectKey top) {
                 if (value != null) {
                     if (top.key == null) {
                         if (!value.isString()) {
-                            throw new JsonParseException("Key in object before position " + position + " is not a string");
+                            throw new JsonParseException("Key in object before position " + state.position + " is not a string");
                         }
                         top.key = (JsonString) value;
                     } else {
-                        JsonObjectKey poppedKey = (JsonObjectKey) stack.pop();
-                        if (stack.isEmpty() || !stack.peek().isObject()) {
-                            throw new JsonParseException("Object not found at stack when adding value from before position " + position);
+                        JsonObjectKey poppedKey = (JsonObjectKey) state.stack.pop();
+                        if (state.stack.isEmpty() || !state.stack.peek().isObject()) {
+                            throw new JsonParseException("Object not found at stack when adding value from before position " + state.position);
                         }
                         if (!poppedKey.seenColon) {
-                            throw new JsonParseException("Expected colon before position " + position);
+                            throw new JsonParseException("Expected colon before position " + state.position);
                         }
-                        stack.peek().asObject().put(poppedKey.key.getString(), value);
-                        stack.push(new JsonObjectKey());
-                        expectsMore = false;
+                        state.stack.peek().asObject().put(poppedKey.key.getString(), value);
+                        state.stack.push(new JsonObjectKey());
+                        state.expectsMore = false;
                     }
                 }
             }
         }
         throw new JsonParseException("Reached end of input without parsing any value");
+    }
+
+    private static JsonValue handleEndObject(Stack<JsonValue> stack, Matcher parser) {
+        if (stack.isEmpty()) {
+            throw new JsonParseException("End of object encountered at position " + parser.start(1) + " without having started parsing one");
+        }
+        JsonValue top = stack.pop();
+        if (!(top instanceof JsonObjectKey)) {
+            throw new JsonParseException("End of object encountered at position " + parser.start(1) + " while parsing something else");
+        }
+        if (((JsonObjectKey) top).key != null) {
+            throw new JsonParseException("End of object encountered at position " + parser.start(1) + " while expecting a value");
+        }
+        if (stack.isEmpty() || !stack.peek().isObject()) {
+            throw new JsonParseException("End of object encountered at position " + parser.start(1) + " without object on parsing stack");
+        }
+        return stack.pop();
+    }
+
+    private static JsonValue handleStartObject(Stack<JsonValue> stack) {
+        stack.push(new JsonObject());
+        stack.push(new JsonObjectKey());
+        return null;
+    }
+
+    private static JsonValue handleEndArray(Stack<JsonValue> stack, Matcher parser) {
+        if (stack.isEmpty() || !stack.peek().isArray()) {
+            throw new JsonParseException("End of array encountered at position " + parser.start(1) + " while not parsing an array");
+        }
+        return stack.pop();
+    }
+
+    private static JsonValue handleStartArray(Stack<JsonValue> stack) {
+        stack.push(new JsonArray());
+        return null;
+    }
+
+    private static JsonValue handleColon(Stack<JsonValue> stack, Matcher parser) {
+        if (stack.isEmpty() || (!(stack.peek() instanceof JsonObjectKey))) {
+            throw new JsonParseException("Found colon at position " + parser.start(1) + " while not parsing an object");
+        }
+        if (((JsonObjectKey) stack.peek()).seenColon) {
+            throw new JsonParseException("Multiple colons at position " + parser.start(1));
+        }
+        ((JsonObjectKey) stack.peek()).seenColon = true;
+        return null;
     }
 
     private static int skipWhileWhitespace(String json, int position) {
