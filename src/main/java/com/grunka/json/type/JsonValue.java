@@ -42,7 +42,7 @@ public class JsonValue {
     }
 
     public boolean isPrimitive() {
-        return isNull() || isBoolean() || isNumber() || isString();
+        return false;
     }
 
     public JsonObject asObject() {

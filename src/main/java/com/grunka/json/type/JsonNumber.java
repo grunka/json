@@ -25,6 +25,11 @@ public class JsonNumber extends JsonValue implements Comparable<JsonNumber> {
     }
 
     @Override
+    public boolean isPrimitive() {
+        return true;
+    }
+
+    @Override
     public int compareTo(JsonNumber o) {
         return number.compareTo(o.number);
     }

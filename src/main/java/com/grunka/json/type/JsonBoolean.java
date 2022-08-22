@@ -42,6 +42,11 @@ public class JsonBoolean extends JsonValue {
     }
 
     @Override
+    public boolean isPrimitive() {
+        return true;
+    }
+
+    @Override
     public String toString() {
         return value ? "true" : "false";
     }

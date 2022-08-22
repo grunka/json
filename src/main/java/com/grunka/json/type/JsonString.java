@@ -20,6 +20,11 @@ public class JsonString extends JsonValue {
         return '"' + encodeString(value) + '"';
     }
 
+    @Override
+    public boolean isPrimitive() {
+        return true;
+    }
+
     private static String encodeString(String contents) {
         Matcher matcher = STRING_ESCAPE_CHARACTERS.matcher(contents);
         return matcher.replaceAll(result -> {
