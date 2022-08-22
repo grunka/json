@@ -22,7 +22,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Json {
-    private static final Pattern NUMBER_PATTERN = Pattern.compile("^-?(0|[1-9][0-9]*)([.][0-9]+)?([eE][+-]?[0-9]+)?");
+    private static final Pattern PARSER_PATTERN = Pattern.compile("[ \\n\\r\\t]*(-?(?:0|[1-9][0-9]*)(?:[.][0-9]+)?(?:[eE][+-]?[0-9]+)?|null|true|false|[,:\"\\[\\]{}])");
 
     private Json() {
     }
@@ -30,111 +30,115 @@ public class Json {
     public static JsonValue parse(String json) {
         int position = 0;
         boolean expectsMore = false;
+        boolean needsParserShift = false;
         Stack<JsonValue> stack = new Stack<>();
+        Matcher parser = PARSER_PATTERN.matcher(json);
         while (position < json.length()) {
-            JsonValue value = null;
-            position = skipWhileWhitespace(json, position);
-            char firstCharacter = json.charAt(position);
-            if (json.startsWith("null", position)) {
-                position += 4;
-                value = JsonNull.NULL;
-            } else if (json.startsWith("true", position)) {
-                position += 4;
-                value = JsonBoolean.TRUE;
-            } else if (json.startsWith("false", position)) {
-                position += 5;
-                value = JsonBoolean.FALSE;
-            } else if (firstCharacter == '"') {
-                position++;
-                StringBuilder builder = new StringBuilder();
-                boolean escape = false;
-                while (true) {
-                    char c = json.charAt(position++);
-                    if (escape) {
-                        switch (c) {
-                            case '\\' -> builder.append('\\');
-                            case '/' -> builder.append('/');
-                            case '"' -> builder.append('"');
-                            case 'b' -> builder.append('\b');
-                            case 'f' -> builder.append('\f');
-                            case 'n' -> builder.append('\n');
-                            case 'r' -> builder.append('\r');
-                            case 't' -> builder.append('\t');
-                            case 'u' -> {
-                                builder.append(Character.toString(Integer.parseInt(json.substring(position, position + 4), 16)));
-                                position += 4;
-                            }
-                        }
-                        escape = false;
-                    } else {
-                        if (c == '\\') {
-                            escape = true;
-                        } else if (c == '"') {
-                            break;
-                        } else {
-                            builder.append(c);
-                        }
-                    }
-                }
-                value = new JsonString(builder.toString());
-            } else if (isNumeric(firstCharacter)) {
-                Matcher matcher = NUMBER_PATTERN.matcher(json.substring(position));
-                if (matcher.find()) {
-                    String number = matcher.group();
-                    position += number.length();
-                    value = new JsonNumber(new BigDecimal(number));
-                } else {
-                    throw new JsonParseException("Could not parse number");
-                }
-            } else if (firstCharacter == ',') {
-                if (stack.isEmpty() || (!stack.peek().isArray() && !(stack.peek() instanceof JsonObjectKey))) {
-                    throw new JsonParseException("No array or object on stack");
-                }
-                expectsMore = true;
-                position++;
-            } else if (firstCharacter == ':') {
-                if (stack.isEmpty() || (!(stack.peek() instanceof JsonObjectKey))) {
-                    throw new JsonParseException("No object key on stack");
-                }
-                if (((JsonObjectKey) stack.peek()).seenColon) {
-                    throw new JsonParseException("Multiple colons encountered");
-                }
-                ((JsonObjectKey) stack.peek()).seenColon = true;
-                position++;
-            } else if (firstCharacter == '[') {
-                position++;
-                stack.push(new JsonArray());
-            } else if (firstCharacter == ']') {
-                if (stack.isEmpty() || !stack.peek().isArray()) {
-                    throw new JsonParseException("End of array encountered without array on stack");
-                }
-                position++;
-                value = stack.pop();
-            } else if (firstCharacter == '{') {
-                position++;
-                stack.push(new JsonObject());
-                stack.push(new JsonObjectKey());
-            } else if (firstCharacter == '}') {
-                if (stack.isEmpty()) {
-                    throw new JsonParseException("End of object encountered without object on stack");
-                }
-                JsonValue top = stack.pop();
-                if (!(top instanceof JsonObjectKey)) {
-                    throw new JsonParseException("Unexpected object on stack");
-                }
-                if (((JsonObjectKey) top).key != null) {
-                    throw new JsonParseException("Partial object entry encountered");
-                }
-                if (stack.isEmpty() || !stack.peek().isObject()) {
-                    throw new JsonParseException("End of object encountered without object on stack");
-                }
-                position++;
-                value = stack.pop();
+            boolean found;
+            if (needsParserShift) {
+                found = parser.find(position);
+                needsParserShift = false;
             } else {
+                found = parser.find();
+            }
+            if (!found) {
                 throw new JsonParseException("Was expecting a JSON value");
             }
-            position = skipWhileWhitespace(json, position);
+            if (parser.start() != position) {
+                throw new JsonParseException("Non matched content");
+            }
+            String match = parser.group(1);
+            position += parser.group().length();
+            JsonValue value = switch (match) {
+                case "null" -> JsonNull.NULL;
+                case "true" -> JsonBoolean.TRUE;
+                case "false" -> JsonBoolean.FALSE;
+                case "," -> {
+                    if (stack.isEmpty() || (!stack.peek().isArray() && !(stack.peek() instanceof JsonObjectKey))) {
+                        throw new JsonParseException("No array or object on stack");
+                    }
+                    expectsMore = true;
+                    yield null;
+                }
+                case ":" -> {
+                    if (stack.isEmpty() || (!(stack.peek() instanceof JsonObjectKey))) {
+                        throw new JsonParseException("No object key on stack");
+                    }
+                    if (((JsonObjectKey) stack.peek()).seenColon) {
+                        throw new JsonParseException("Multiple colons encountered");
+                    }
+                    ((JsonObjectKey) stack.peek()).seenColon = true;
+                    yield null;
+                }
+                case "[" -> {
+                    stack.push(new JsonArray());
+                    yield null;
+                }
+                case "]" -> {
+                    if (stack.isEmpty() || !stack.peek().isArray()) {
+                        throw new JsonParseException("End of array encountered without array on stack");
+                    }
+                    yield stack.pop();
+                }
+                case "{" -> {
+                    stack.push(new JsonObject());
+                    stack.push(new JsonObjectKey());
+                    yield null;
+                }
+                case "}" -> {
+                    if (stack.isEmpty()) {
+                        throw new JsonParseException("End of object encountered without object on stack");
+                    }
+                    JsonValue top = stack.pop();
+                    if (!(top instanceof JsonObjectKey)) {
+                        throw new JsonParseException("Unexpected object on stack");
+                    }
+                    if (((JsonObjectKey) top).key != null) {
+                        throw new JsonParseException("Partial object entry encountered");
+                    }
+                    if (stack.isEmpty() || !stack.peek().isObject()) {
+                        throw new JsonParseException("End of object encountered without object on stack");
+                    }
+                    yield stack.pop();
+                }
+                case "\"" -> {
+                    StringBuilder builder = new StringBuilder();
+                    boolean escape = false;
+                    while (true) {
+                        char c = json.charAt(position++);
+                        if (escape) {
+                            switch (c) {
+                                case '\\' -> builder.append('\\');
+                                case '/' -> builder.append('/');
+                                case '"' -> builder.append('"');
+                                case 'b' -> builder.append('\b');
+                                case 'f' -> builder.append('\f');
+                                case 'n' -> builder.append('\n');
+                                case 'r' -> builder.append('\r');
+                                case 't' -> builder.append('\t');
+                                case 'u' -> {
+                                    builder.append(Character.toString(Integer.parseInt(json.substring(position, position + 4), 16)));
+                                    position += 4;
+                                }
+                            }
+                            escape = false;
+                        } else {
+                            if (c == '\\') {
+                                escape = true;
+                            } else if (c == '"') {
+                                break;
+                            } else {
+                                builder.append(c);
+                            }
+                        }
+                    }
+                    needsParserShift = true;
+                    yield new JsonString(builder.toString());
+                }
+                default -> new JsonNumber(new BigDecimal(match));
+            };
             if (stack.isEmpty()) {
+                position = skipWhileWhitespace(json, position);
                 if (position == json.length()) {
                     if (expectsMore) {
                         throw new JsonParseException("Dangling comma");
@@ -148,9 +152,8 @@ public class Json {
                     stack.peek().asArray().add(value);
                     expectsMore = false;
                 }
-            } else if (stack.peek() instanceof JsonObjectKey) {
+            } else if (stack.peek() instanceof JsonObjectKey top) {
                 if (value != null) {
-                    JsonObjectKey top = (JsonObjectKey) stack.peek();
                     if (top.key == null) {
                         if (!value.isString()) {
                             throw new JsonParseException("Did not get string as key for object");
@@ -172,13 +175,6 @@ public class Json {
             }
         }
         throw new JsonParseException("Ended parsing unexpectedly");
-    }
-
-    private static boolean isNumeric(char c) {
-        return switch (c) {
-            case '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' -> true;
-            default -> false;
-        };
     }
 
     private static int skipWhileWhitespace(String json, int position) {
