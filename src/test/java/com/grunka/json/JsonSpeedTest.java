@@ -16,8 +16,7 @@ import static org.junit.Assert.assertEquals;
 
 public class JsonSpeedTest {
     @Test
-    public void shouldParseQuickly() throws InterruptedException {
-        Thread.sleep(10_000);
+    public void shouldParseQuickly() {
         Random random = new Random(11);
         JsonValue root = fill(random, 0, new JsonObject());
         System.out.println("root = " + root);
