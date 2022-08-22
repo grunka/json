@@ -14,6 +14,6 @@ There are many much more tested, used, advanced, and customizable libraries for 
 - No external runtime libraries. Since this began as an excercise for me I wanted to do it all. Also, simple things like this should not need any extra dependencies.
 
 ## TODOs
-- [ ] Error messages that are more clear about how the parsing failed
+- [x] ~~Error messages that are more clear about how the parsing failed~~
 - [x] ~~Check if the parsing performance is horrible or not~~
 - [x] ~~Non-recursive toStrings~~

@@ -22,7 +22,79 @@ public class JsonTest {
             System.out.println(e.getMessage());
         }
         try {
+            Json.parse("{\"key\"}");
+            fail();
+        } catch (JsonParseException e) {
+            System.out.println(e.getMessage());
+        }
+        try {
             Json.parse("{true:true}");
+            fail();
+        } catch (JsonParseException e) {
+            System.out.println(e.getMessage());
+        }
+        try {
+            Json.parse("{]");
+            fail();
+        } catch (JsonParseException e) {
+            System.out.println(e.getMessage());
+        }
+        try {
+            Json.parse("[{]}");
+            fail();
+        } catch (JsonParseException e) {
+            System.out.println(e.getMessage());
+        }
+        try {
+            Json.parse("{[]}");
+            fail();
+        } catch (JsonParseException e) {
+            System.out.println(e.getMessage());
+        }
+        try {
+            Json.parse("[}");
+            fail();
+        } catch (JsonParseException e) {
+            System.out.println(e.getMessage());
+        }
+        try {
+            Json.parse("{:true}");
+            fail();
+        } catch (JsonParseException e) {
+            System.out.println(e.getMessage());
+        }
+        try {
+            Json.parse("{\"key\"::true}");
+            fail();
+        } catch (JsonParseException e) {
+            System.out.println(e.getMessage());
+        }
+        try {
+            Json.parse("{,}");
+            fail();
+        } catch (JsonParseException e) {
+            System.out.println(e.getMessage());
+        }
+        try {
+            Json.parse("[,]");
+            fail();
+        } catch (JsonParseException e) {
+            System.out.println(e.getMessage());
+        }
+        try {
+            Json.parse(",");
+            fail();
+        } catch (JsonParseException e) {
+            System.out.println(e.getMessage());
+        }
+        try {
+            Json.parse("[:]");
+            fail();
+        } catch (JsonParseException e) {
+            System.out.println(e.getMessage());
+        }
+        try {
+            Json.parse(":");
             fail();
         } catch (JsonParseException e) {
             System.out.println(e.getMessage());
@@ -53,6 +125,12 @@ public class JsonTest {
         }
         try {
             Json.parse("abc []");
+            fail();
+        } catch (JsonParseException e) {
+            System.out.println(e.getMessage());
+        }
+        try {
+            Json.parse("   ");
             fail();
         } catch (JsonParseException e) {
             System.out.println(e.getMessage());

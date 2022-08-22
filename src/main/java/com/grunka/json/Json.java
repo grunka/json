@@ -42,10 +42,10 @@ public class Json {
                 found = parser.find();
             }
             if (!found) {
-                throw new JsonParseException("Was expecting a JSON value");
+                throw new JsonParseException("Did not find any JSON content after position " + position);
             }
             if (parser.start() != position) {
-                throw new JsonParseException("Non matched content");
+                throw new JsonParseException("Found non JSON content at position " + position);
             }
             String match = parser.group(1);
             position += parser.group().length();
@@ -55,17 +55,17 @@ public class Json {
                 case "false" -> JsonBoolean.FALSE;
                 case "," -> {
                     if (stack.isEmpty() || (!stack.peek().isArray() && !(stack.peek() instanceof JsonObjectKey))) {
-                        throw new JsonParseException("No array or object on stack");
+                        throw new JsonParseException("Found comma at position " + parser.start(1) + " while not parsing an array or an object");
                     }
                     expectsMore = true;
                     yield null;
                 }
                 case ":" -> {
                     if (stack.isEmpty() || (!(stack.peek() instanceof JsonObjectKey))) {
-                        throw new JsonParseException("No object key on stack");
+                        throw new JsonParseException("Found colon at position " + parser.start(1) + " while not parsing an object");
                     }
                     if (((JsonObjectKey) stack.peek()).seenColon) {
-                        throw new JsonParseException("Multiple colons encountered");
+                        throw new JsonParseException("Multiple colons at position " + parser.start(1));
                     }
                     ((JsonObjectKey) stack.peek()).seenColon = true;
                     yield null;
@@ -76,7 +76,7 @@ public class Json {
                 }
                 case "]" -> {
                     if (stack.isEmpty() || !stack.peek().isArray()) {
-                        throw new JsonParseException("End of array encountered without array on stack");
+                        throw new JsonParseException("End of array encountered at position " + parser.start(1) + " while not parsing an array");
                     }
                     yield stack.pop();
                 }
@@ -87,17 +87,17 @@ public class Json {
                 }
                 case "}" -> {
                     if (stack.isEmpty()) {
-                        throw new JsonParseException("End of object encountered without object on stack");
+                        throw new JsonParseException("End of object encountered at position " + parser.start(1) + " without having started parsing one");
                     }
                     JsonValue top = stack.pop();
                     if (!(top instanceof JsonObjectKey)) {
-                        throw new JsonParseException("Unexpected object on stack");
+                        throw new JsonParseException("End of object encountered at position " + parser.start(1) + " while parsing something else");
                     }
                     if (((JsonObjectKey) top).key != null) {
-                        throw new JsonParseException("Partial object entry encountered");
+                        throw new JsonParseException("End of object encountered at position " + parser.start(1) + " while expecting a value");
                     }
                     if (stack.isEmpty() || !stack.peek().isObject()) {
-                        throw new JsonParseException("End of object encountered without object on stack");
+                        throw new JsonParseException("End of object encountered at position " + parser.start(1) + " without object on parsing stack");
                     }
                     yield stack.pop();
                 }
@@ -141,11 +141,11 @@ public class Json {
                 position = skipWhileWhitespace(json, position);
                 if (position == json.length()) {
                     if (expectsMore) {
-                        throw new JsonParseException("Dangling comma");
+                        throw new JsonParseException("Parsing ended with a dangling comma");
                     }
                     return value;
                 } else {
-                    throw new JsonParseException("Did not fully read input");
+                    throw new JsonParseException("Non parsable data found at end of input");
                 }
             } else if (stack.peek().isArray()) {
                 if (value != null) {
@@ -156,16 +156,16 @@ public class Json {
                 if (value != null) {
                     if (top.key == null) {
                         if (!value.isString()) {
-                            throw new JsonParseException("Did not get string as key for object");
+                            throw new JsonParseException("Key in object before position " + position + " is not a string");
                         }
                         top.key = (JsonString) value;
                     } else {
                         JsonObjectKey poppedKey = (JsonObjectKey) stack.pop();
                         if (stack.isEmpty() || !stack.peek().isObject()) {
-                            throw new JsonParseException("Object missing from stack when adding value");
+                            throw new JsonParseException("Object not found at stack when adding value from before position " + position);
                         }
                         if (!poppedKey.seenColon) {
-                            throw new JsonParseException("Missing colon");
+                            throw new JsonParseException("Expected colon before position " + position);
                         }
                         stack.peek().asObject().put(poppedKey.key.getString(), value);
                         stack.push(new JsonObjectKey());
@@ -174,7 +174,7 @@ public class Json {
                 }
             }
         }
-        throw new JsonParseException("Ended parsing unexpectedly");
+        throw new JsonParseException("Reached end of input without parsing any value");
     }
 
     private static int skipWhileWhitespace(String json, int position) {
