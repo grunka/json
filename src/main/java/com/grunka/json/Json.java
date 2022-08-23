@@ -130,7 +130,7 @@ public class Json {
         StringBuilder builder = new StringBuilder();
         boolean escape = false;
         while (true) {
-            char c = json.charAt(state.position += 1);
+            char c = json.charAt(state.position++);
             if (escape) {
                 switch (c) {
                     case '\\' -> builder.append('\\');
@@ -337,5 +337,29 @@ public class Json {
             }
         }
         return output.toString();
+    }
+
+    public static <T> T objectify(String json, Class<? extends T> type) {
+        return objectify(parse(json), type);
+    }
+
+    public static <T> T objectify(JsonValue value, Class<? extends T> type) {
+        return null;
+    }
+
+    public static <T> List<T> objectifyList(String json, Class<? extends T> type) {
+        return objectifyList(parse(json), type);
+    }
+
+    public static <T> List<T> objectifyList(JsonValue value, Class<? extends T> type) {
+        return null;
+    }
+
+    public static <K, V> Map<K, V> objectifyMap(String json, Class<? extends K> keyType, Class<? extends V> valueType) {
+        return objectifyMap(parse(json), keyType, valueType);
+    }
+
+    public static <K, V> Map<K, V> objectifyMap(JsonValue value, Class<? extends K> keyType, Class<? extends V> valueType) {
+        return null;
     }
 }

@@ -241,4 +241,9 @@ public class JsonTest {
             this.g = g;
         }
     }
+
+    @Test
+    public void shouldParsePrimitiveObjects() {
+        assertEquals("hello world", Json.objectify("\"hello world\"", String.class));
+    }
 }
