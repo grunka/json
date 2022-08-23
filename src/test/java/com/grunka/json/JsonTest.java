@@ -7,6 +7,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
@@ -261,5 +262,7 @@ public class JsonTest {
         assertEquals(1.2, Json.objectify("1.2", float.class), 0.0001);
         assertEquals(BigDecimal.ONE, Json.objectify("1", BigDecimal.class));
         assertEquals(BigInteger.ONE, Json.objectify("1", BigInteger.class));
+        assertEquals(List.of("hello", "world"), Json.objectifyList("[\"hello\",\"world\"]", String.class));
+        assertEquals(Map.of("hello", "world"), Json.objectifyMap("{\"hello\":\"world\"}", String.class));
     }
 }
