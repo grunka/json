@@ -1,6 +1,7 @@
 package com.grunka.json.type;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.Objects;
 
 public class JsonNumber extends JsonValue implements Comparable<JsonNumber> {
@@ -8,6 +9,26 @@ public class JsonNumber extends JsonValue implements Comparable<JsonNumber> {
 
     public JsonNumber(BigDecimal number) {
         this.number = Objects.requireNonNull(number, "Value cannot be null");
+    }
+
+    public JsonNumber(BigInteger number) {
+        this(new BigDecimal(number));
+    }
+
+    public JsonNumber(int number) {
+        this(BigDecimal.valueOf(number));
+    }
+
+    public JsonNumber(long number) {
+        this(BigDecimal.valueOf(number));
+    }
+
+    public JsonNumber(double number) {
+        this(BigDecimal.valueOf(number));
+    }
+
+    public JsonNumber(String number) {
+        this(new BigDecimal(number));
     }
 
     @Override
