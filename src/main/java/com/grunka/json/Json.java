@@ -439,7 +439,14 @@ public class Json {
             String name = field.getName();
             JsonValue jsonValue = value.asObject().get(name);
             Class<?> fieldType = field.getType();
-            if (List.class.isAssignableFrom(fieldType)) {
+            if (Optional.class.isAssignableFrom(fieldType)) {
+                Type[] typeArguments = ((ParameterizedType) field.getGenericType()).getActualTypeArguments();
+                try {
+                    field.set(instance, Optional.ofNullable(objectify(jsonValue, (Class<?>) typeArguments[0])));
+                } catch (IllegalAccessException e) {
+                    throw new JsonObjectifyException("Failed to set the field named " + field.getName() + " in " + type.getSimpleName(), e);
+                }
+            } else if (List.class.isAssignableFrom(fieldType)) {
                 Type[] typeArguments = ((ParameterizedType) field.getGenericType()).getActualTypeArguments();
                 try {
                     field.set(instance, objectifyList(jsonValue, (Class<?>) typeArguments[0]));
