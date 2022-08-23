@@ -10,9 +10,11 @@ import com.grunka.json.type.JsonValue;
 
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.time.temporal.Temporal;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +22,7 @@ import java.util.Optional;
 import java.util.Stack;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class Json {
     private static final Pattern PARSER_PATTERN = Pattern.compile("[ \\n\\r\\t]*(-?(?:0|[1-9][0-9]*)(?:[.][0-9]+)?(?:[eE][+-]?[0-9]+)?|null|true|false|[,:\"\\[\\]{}])");
@@ -344,7 +347,59 @@ public class Json {
     }
 
     public static <T> T objectify(JsonValue value, Class<? extends T> type) {
-        return null;
+        if (type == null) {
+            throw new NullPointerException("Type cannot be null");
+        }
+        if (value == null) {
+            throw new NullPointerException("Value cannot be null");
+        }
+        if (value.isNull()) {
+            return null;
+        }
+        if (type == String.class) {
+            if (!value.isString()) {
+                throw new JsonObjectifyException("Trying to get a string from " + value.getClass().getSimpleName());
+            }
+            //noinspection unchecked
+            return (T) value.asString().getString();
+        }
+        if (type == boolean.class || type == Boolean.class) {
+            if (!value.isBoolean()) {
+                throw new JsonObjectifyException("Trying to get boolean value from " + value.getClass().getSimpleName());
+            }
+            //noinspection unchecked
+            return (T) value.asBoolean().getBoolean();
+        }
+        if (Number.class.isAssignableFrom(type) || type == int.class || type == float.class || type == double.class || type == long.class) {
+            if (!value.isNumber()) {
+                throw new JsonObjectifyException("Trying to get number from " + value.getClass().getSimpleName());
+            }
+            if (type == int.class || type == Integer.class) {
+                //noinspection unchecked
+                return (T) (Integer) value.asNumber().getBigDecimal().intValueExact();
+            }
+            if (type == long.class || type == Long.class) {
+                //noinspection unchecked
+                return (T) (Long) value.asNumber().getBigDecimal().longValueExact();
+            }
+            if (type == float.class || type == Float.class) {
+                //noinspection unchecked
+                return (T) (Float) value.asNumber().getBigDecimal().floatValue();
+            }
+            if (type == double.class || type == Double.class) {
+                //noinspection unchecked
+                return (T) (Double) value.asNumber().getBigDecimal().doubleValue();
+            }
+            if (type == BigInteger.class) {
+                //noinspection unchecked
+                return (T) value.asNumber().getBigDecimal().toBigIntegerExact();
+            }
+            if (type == BigDecimal.class) {
+                //noinspection unchecked
+                return (T) value.asNumber().getBigDecimal();
+            }
+        }
+        throw new JsonObjectifyException("Could not objectify a " + value.getClass().getSimpleName() + " into a " + type.getSimpleName());
     }
 
     public static <T> List<T> objectifyList(String json, Class<? extends T> type) {
@@ -352,14 +407,24 @@ public class Json {
     }
 
     public static <T> List<T> objectifyList(JsonValue value, Class<? extends T> type) {
-        return null;
+        if (!value.isArray()) {
+            throw new JsonObjectifyException("Supplied value was not an array");
+        }
+        return value.asArray().stream().map(v -> objectify(v, type)).collect(Collectors.toList());
     }
 
-    public static <K, V> Map<K, V> objectifyMap(String json, Class<? extends K> keyType, Class<? extends V> valueType) {
-        return objectifyMap(parse(json), keyType, valueType);
+    public static <V> Map<String, V> objectifyMap(String json, Class<? extends V> type) {
+        return objectifyMap(parse(json), type);
     }
 
-    public static <K, V> Map<K, V> objectifyMap(JsonValue value, Class<? extends K> keyType, Class<? extends V> valueType) {
-        return null;
+    public static <V> Map<String, V> objectifyMap(JsonValue value, Class<? extends V> type) {
+        if (!value.isObject()) {
+            throw new JsonObjectifyException("Supplied value is not an object");
+        }
+        Map<String, V> result = new LinkedHashMap<>();
+        for (Map.Entry<String, JsonValue> entry : value.asObject().entrySet()) {
+            result.put(entry.getKey(), objectify(entry.getValue(), type));
+        }
+        return result;
     }
 }

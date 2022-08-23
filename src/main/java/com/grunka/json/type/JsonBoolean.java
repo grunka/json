@@ -15,10 +15,6 @@ public class JsonBoolean extends JsonValue {
         return value;
     }
 
-    public boolean isFalse() {
-        return !value;
-    }
-
     @Override
     public boolean isBoolean() {
         return true;
@@ -49,5 +45,9 @@ public class JsonBoolean extends JsonValue {
     @Override
     public String toString() {
         return value ? "true" : "false";
+    }
+
+    public Boolean getBoolean() {
+        return value;
     }
 }

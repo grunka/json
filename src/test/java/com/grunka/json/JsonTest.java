@@ -4,11 +4,14 @@ import com.grunka.json.type.JsonString;
 import org.junit.Test;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -148,7 +151,7 @@ public class JsonTest {
         assertTrue(Json.parse("true").isBoolean());
         assertTrue(Json.parse(" \r\ntrue\t ").asBoolean().isTrue());
         assertTrue(Json.parse("false").isBoolean());
-        assertTrue(Json.parse(" \r\nfalse\t ").asBoolean().isFalse());
+        assertFalse(Json.parse(" \r\nfalse\t ").asBoolean().getBoolean());
     }
 
     @Test
@@ -243,7 +246,20 @@ public class JsonTest {
     }
 
     @Test
-    public void shouldParsePrimitiveObjects() {
+    public void shouldObjectifyPrimitiveObjects() {
         assertEquals("hello world", Json.objectify("\"hello world\"", String.class));
+        assertTrue(Json.objectify("true", Boolean.class));
+        assertTrue(Json.objectify("true", boolean.class));
+        assertNull(Json.objectify("null", String.class));
+        assertEquals((Integer) 1, Json.objectify("1", Integer.class));
+        assertEquals(1, (int) Json.objectify("1", int.class));
+        assertEquals((Long) 1L, Json.objectify("1", Long.class));
+        assertEquals(1, (long) Json.objectify("1", long.class));
+        assertEquals((Double) 1.2, Json.objectify("1.2", Double.class));
+        assertEquals(1.2, Json.objectify("1.2", double.class), 0);
+        assertEquals((Float) 1.2f, Json.objectify("1.2", Float.class));
+        assertEquals(1.2, Json.objectify("1.2", float.class), 0.0001);
+        assertEquals(BigDecimal.ONE, Json.objectify("1", BigDecimal.class));
+        assertEquals(BigInteger.ONE, Json.objectify("1", BigInteger.class));
     }
 }
