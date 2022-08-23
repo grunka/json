@@ -257,11 +257,8 @@ public class Json {
         if (input instanceof Boolean) {
             return ((Boolean) input) ? JsonBoolean.TRUE : JsonBoolean.FALSE;
         }
-        if (input instanceof BigDecimal) {
-            return new JsonNumber((BigDecimal) input);
-        }
         if (input instanceof Number) {
-            return new JsonNumber(new BigDecimal(String.valueOf(input)));
+            return new JsonNumber((Number) input);
         }
         if (input instanceof String) {
             return new JsonString((String) input);
