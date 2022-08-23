@@ -11,6 +11,14 @@ import com.grunka.json.type.JsonValue;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetDateTime;
+import java.time.Year;
+import java.time.YearMonth;
+import java.time.ZonedDateTime;
 import java.time.temporal.Temporal;
 import java.util.Collection;
 import java.util.Iterator;
@@ -397,6 +405,43 @@ public class Json {
             if (type == BigDecimal.class) {
                 //noinspection unchecked
                 return (T) value.asNumber().getBigDecimal();
+            }
+        }
+        if (Temporal.class.isAssignableFrom(type)) {
+            if (!value.isString()) {
+                throw new JsonObjectifyException("Trying to get a temporal value from " + value.getClass().getSimpleName() + " instead of a JsonString");
+            }
+            if (type == Instant.class) {
+                //noinspection unchecked
+                return (T) Instant.parse(value.asString().getString());
+            }
+            if (type == LocalDateTime.class) {
+                //noinspection unchecked
+                return (T) LocalDateTime.parse(value.asString().getString());
+            }
+            if (type == LocalDate.class) {
+                //noinspection unchecked
+                return (T) LocalDate.parse(value.asString().getString());
+            }
+            if (type == LocalTime.class) {
+                //noinspection unchecked
+                return (T) LocalTime.parse(value.asString().getString());
+            }
+            if (type == OffsetDateTime.class) {
+                //noinspection unchecked
+                return (T) OffsetDateTime.parse(value.asString().getString());
+            }
+            if (type == Year.class) {
+                //noinspection unchecked
+                return (T) Year.parse(value.asString().getString());
+            }
+            if (type == YearMonth.class) {
+                //noinspection unchecked
+                return (T) YearMonth.parse(value.asString().getString());
+            }
+            if (type == ZonedDateTime.class) {
+                //noinspection unchecked
+                return (T) ZonedDateTime.parse(value.asString().getString());
             }
         }
         throw new JsonObjectifyException("Could not objectify a " + value.getClass().getSimpleName() + " into a " + type.getSimpleName());

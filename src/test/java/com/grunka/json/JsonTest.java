@@ -6,6 +6,14 @@ import org.junit.Test;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetDateTime;
+import java.time.Year;
+import java.time.YearMonth;
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -264,5 +272,25 @@ public class JsonTest {
         assertEquals(BigInteger.ONE, Json.objectify("1", BigInteger.class));
         assertEquals(List.of("hello", "world"), Json.objectifyList("[\"hello\",\"world\"]", String.class));
         assertEquals(Map.of("hello", "world"), Json.objectifyMap("{\"hello\":\"world\"}", String.class));
+    }
+
+    @Test
+    public void shouldObjectifyTemporalObjects() {
+        Instant instant = Instant.now().truncatedTo(ChronoUnit.SECONDS);
+        assertEquals(instant, Json.objectify(Json.stringify(instant), Instant.class));
+        OffsetDateTime offsetDateTime = OffsetDateTime.now().truncatedTo(ChronoUnit.SECONDS);
+        assertEquals(offsetDateTime, Json.objectify(Json.stringify(offsetDateTime), OffsetDateTime.class));
+        LocalDateTime localDateTime = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
+        assertEquals(localDateTime, Json.objectify(Json.stringify(localDateTime), LocalDateTime.class));
+        ZonedDateTime zonedDateTime = ZonedDateTime.now().truncatedTo(ChronoUnit.SECONDS);
+        assertEquals(zonedDateTime, Json.objectify(Json.stringify(zonedDateTime), ZonedDateTime.class));
+        LocalDate localDate = LocalDate.now();
+        assertEquals(localDate, Json.objectify(Json.stringify(localDate), LocalDate.class));
+        LocalTime localTime = LocalTime.now().truncatedTo(ChronoUnit.SECONDS);
+        assertEquals(localTime, Json.objectify(Json.stringify(localTime), LocalTime.class));
+        Year year = Year.now();
+        assertEquals(year, Json.objectify(Json.stringify(year), Year.class));
+        YearMonth yearMonth = YearMonth.now();
+        assertEquals(yearMonth, Json.objectify(Json.stringify(yearMonth), YearMonth.class));
     }
 }
