@@ -379,72 +379,82 @@ public class Json {
             return (T) value.asBoolean().getBoolean();
         }
         if (Number.class.isAssignableFrom(type) || type == int.class || type == float.class || type == double.class || type == long.class) {
-            if (!value.isNumber()) {
-                throw new JsonObjectifyException("Trying to get number from " + value.getClass().getSimpleName());
-            }
-            if (type == int.class || type == Integer.class) {
-                //noinspection unchecked
-                return (T) (Integer) value.asNumber().getBigDecimal().intValueExact();
-            }
-            if (type == long.class || type == Long.class) {
-                //noinspection unchecked
-                return (T) (Long) value.asNumber().getBigDecimal().longValueExact();
-            }
-            if (type == float.class || type == Float.class) {
-                //noinspection unchecked
-                return (T) (Float) value.asNumber().getBigDecimal().floatValue();
-            }
-            if (type == double.class || type == Double.class) {
-                //noinspection unchecked
-                return (T) (Double) value.asNumber().getBigDecimal().doubleValue();
-            }
-            if (type == BigInteger.class) {
-                //noinspection unchecked
-                return (T) value.asNumber().getBigDecimal().toBigIntegerExact();
-            }
-            if (type == BigDecimal.class) {
-                //noinspection unchecked
-                return (T) value.asNumber().getBigDecimal();
-            }
+            return convertNumber(value, type);
         }
         if (Temporal.class.isAssignableFrom(type)) {
-            if (!value.isString()) {
-                throw new JsonObjectifyException("Trying to get a temporal value from " + value.getClass().getSimpleName() + " instead of a JsonString");
-            }
-            if (type == Instant.class) {
-                //noinspection unchecked
-                return (T) Instant.parse(value.asString().getString());
-            }
-            if (type == LocalDateTime.class) {
-                //noinspection unchecked
-                return (T) LocalDateTime.parse(value.asString().getString());
-            }
-            if (type == LocalDate.class) {
-                //noinspection unchecked
-                return (T) LocalDate.parse(value.asString().getString());
-            }
-            if (type == LocalTime.class) {
-                //noinspection unchecked
-                return (T) LocalTime.parse(value.asString().getString());
-            }
-            if (type == OffsetDateTime.class) {
-                //noinspection unchecked
-                return (T) OffsetDateTime.parse(value.asString().getString());
-            }
-            if (type == Year.class) {
-                //noinspection unchecked
-                return (T) Year.parse(value.asString().getString());
-            }
-            if (type == YearMonth.class) {
-                //noinspection unchecked
-                return (T) YearMonth.parse(value.asString().getString());
-            }
-            if (type == ZonedDateTime.class) {
-                //noinspection unchecked
-                return (T) ZonedDateTime.parse(value.asString().getString());
-            }
+            return convertTemporal(value, type);
         }
         throw new JsonObjectifyException("Could not objectify a " + value.getClass().getSimpleName() + " into a " + type.getSimpleName());
+    }
+
+    private static <T> T convertTemporal(JsonValue value, Class<? extends T> type) {
+        if (!value.isString()) {
+            throw new JsonObjectifyException("Trying to get a temporal value from " + value.getClass().getSimpleName() + " instead of a JsonString");
+        }
+        if (type == Instant.class) {
+            //noinspection unchecked
+            return (T) Instant.parse(value.asString().getString());
+        }
+        if (type == LocalDateTime.class) {
+            //noinspection unchecked
+            return (T) LocalDateTime.parse(value.asString().getString());
+        }
+        if (type == LocalDate.class) {
+            //noinspection unchecked
+            return (T) LocalDate.parse(value.asString().getString());
+        }
+        if (type == LocalTime.class) {
+            //noinspection unchecked
+            return (T) LocalTime.parse(value.asString().getString());
+        }
+        if (type == OffsetDateTime.class) {
+            //noinspection unchecked
+            return (T) OffsetDateTime.parse(value.asString().getString());
+        }
+        if (type == Year.class) {
+            //noinspection unchecked
+            return (T) Year.parse(value.asString().getString());
+        }
+        if (type == YearMonth.class) {
+            //noinspection unchecked
+            return (T) YearMonth.parse(value.asString().getString());
+        }
+        if (type == ZonedDateTime.class) {
+            //noinspection unchecked
+            return (T) ZonedDateTime.parse(value.asString().getString());
+        }
+        throw new JsonObjectifyException("Do not have an implementation that converts a string to " + type.getSimpleName());
+    }
+
+    private static <T> T convertNumber(JsonValue value, Class<? extends T> type) {
+        if (!value.isNumber()) {
+            throw new JsonObjectifyException("Trying to get number from " + value.getClass().getSimpleName());
+        }
+        if (type == int.class || type == Integer.class) {
+            //noinspection unchecked
+            return (T) (Integer) value.asNumber().getBigDecimal().intValueExact();
+        }
+        if (type == long.class || type == Long.class) {
+            //noinspection unchecked
+            return (T) (Long) value.asNumber().getBigDecimal().longValueExact();
+        }
+        if (type == float.class || type == Float.class) {
+            //noinspection unchecked
+            return (T) (Float) value.asNumber().getBigDecimal().floatValue();
+        }
+        if (type == double.class || type == Double.class) {
+            //noinspection unchecked
+            return (T) (Double) value.asNumber().getBigDecimal().doubleValue();
+        }
+        if (type == BigInteger.class) {
+            //noinspection unchecked
+            return (T) value.asNumber().getBigDecimal().toBigIntegerExact();
+        }
+        if (type == BigDecimal.class) {
+            //noinspection unchecked
+            return (T) value.asNumber().getBigDecimal();
+        }
+        throw new JsonObjectifyException("Do not have an implementation that converts a number to " + type.getSimpleName());
     }
 
     public static <T> List<T> objectifyList(String json, Class<? extends T> type) {
