@@ -8,7 +8,11 @@ import com.grunka.json.type.JsonObject;
 import com.grunka.json.type.JsonString;
 import com.grunka.json.type.JsonValue;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -384,7 +388,84 @@ public class Json {
         if (Temporal.class.isAssignableFrom(type)) {
             return convertTemporal(value, type);
         }
-        throw new JsonObjectifyException("Could not objectify a " + value.getClass().getSimpleName() + " into a " + type.getSimpleName());
+        return convertObject(value, type);
+    }
+
+    private static <T> T convertObject(JsonValue value, Class<? extends T> type) {
+        if (!value.isObject()) {
+            throw new JsonObjectifyException("Cannot create object of type " + type.getSimpleName() + " from " + value.getClass().getSimpleName() + " instead of JsonObject");
+        }
+        int numberOfConstructorParameters = Integer.MAX_VALUE;
+        Constructor<?> selectedConstructor = null;
+        for (Constructor<?> declaredConstructor : type.getDeclaredConstructors()) {
+            if (declaredConstructor.getParameterCount() < numberOfConstructorParameters) {
+                numberOfConstructorParameters = declaredConstructor.getParameterCount();
+                selectedConstructor = declaredConstructor;
+            }
+        }
+        if (selectedConstructor == null) {
+            throw new JsonObjectifyException("Could not find a constructor for " + type.getSimpleName());
+        }
+        Object[] constructorParameters = new Object[numberOfConstructorParameters];
+        Class<?>[] parameterTypes = selectedConstructor.getParameterTypes();
+        for (int i = 0; i < numberOfConstructorParameters; i++) {
+            if (parameterTypes[i] == int.class) {
+                constructorParameters[i] = 0;
+            } else if (parameterTypes[i] == long.class) {
+                constructorParameters[i] = 0L;
+            } else if (parameterTypes[i] == float.class) {
+                constructorParameters[i] = 0f;
+            } else if (parameterTypes[i] == double.class) {
+                constructorParameters[i] = 0.0;
+            } else if (parameterTypes[i] == boolean.class) {
+                constructorParameters[i] = false;
+            } else if (parameterTypes[i] == byte.class) {
+                constructorParameters[i] = (byte) 0;
+            } else if (parameterTypes[i] == short.class) {
+                constructorParameters[i] = (short) 0;
+            }
+        }
+        Object instance;
+        try {
+            selectedConstructor.trySetAccessible();
+            instance = selectedConstructor.newInstance(constructorParameters);
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
+            throw new JsonObjectifyException("Could not instantiate a " + type.getSimpleName(), e);
+        }
+        for (Field field : type.getDeclaredFields()) {
+            if (!field.trySetAccessible()) {
+                continue;
+            }
+            String name = field.getName();
+            JsonValue jsonValue = value.asObject().get(name);
+            Class<?> fieldType = field.getType();
+            if (List.class.isAssignableFrom(fieldType)) {
+                Type[] typeArguments = ((ParameterizedType) field.getGenericType()).getActualTypeArguments();
+                try {
+                    field.set(instance, objectifyList(jsonValue, (Class<?>) typeArguments[0]));
+                } catch (IllegalAccessException e) {
+                    throw new JsonObjectifyException("Failed to set the field named " + field.getName() + " in " + type.getSimpleName(), e);
+                }
+            } else if (Map.class.isAssignableFrom(fieldType)) {
+                Type[] typeArguments = ((ParameterizedType) field.getGenericType()).getActualTypeArguments();
+                if (typeArguments[0] != String.class) {
+                    throw new JsonObjectifyException("Encountered map named " + field.getName() + " in " + type.getSimpleName() + " with non string key");
+                }
+                try {
+                    field.set(instance, objectifyMap(jsonValue, (Class<?>) typeArguments[1]));
+                } catch (IllegalAccessException e) {
+                    throw new JsonObjectifyException("Failed to set the field named " + field.getName() + " in " + type.getSimpleName(), e);
+                }
+            } else {
+                try {
+                    field.set(instance, objectify(jsonValue, fieldType));
+                } catch (IllegalAccessException e) {
+                    throw new JsonObjectifyException("Failed to set the field named " + field.getName() + " in " + type.getSimpleName(), e);
+                }
+            }
+        }
+        //noinspection unchecked
+        return (T) instance;
     }
 
     private static <T> T convertTemporal(JsonValue value, Class<? extends T> type) {
