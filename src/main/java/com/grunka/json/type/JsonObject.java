@@ -9,7 +9,15 @@ import java.util.Objects;
 import java.util.Set;
 
 public class JsonObject extends JsonValue implements Map<String, JsonValue> {
-    private final Map<String, JsonValue> values = new LinkedHashMap<>();
+    private final LinkedHashMap<String, JsonValue> values;
+
+    public JsonObject() {
+        this(new LinkedHashMap<>());
+    }
+
+    public JsonObject(LinkedHashMap<String, JsonValue> values) {
+        this.values = values;
+    }
 
     @Override
     public String toString() {
