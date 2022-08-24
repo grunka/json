@@ -31,7 +31,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Stack;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -46,11 +45,27 @@ public class Json {
         int position = 0;
         boolean expectsMoreEntries = false;
         boolean shiftParsingToPosition = false;
-        final Stack<JsonValue> stack = new Stack<>();
+        private final LinkedList<JsonValue> parsingStack = new LinkedList<>();
         final Matcher parser;
 
         private State(Matcher parser) {
             this.parser = parser;
+        }
+
+        public JsonValue peek() {
+            return parsingStack.peek();
+        }
+
+        public JsonValue pop() {
+            return parsingStack.pop();
+        }
+
+        public void push(JsonValue value) {
+            parsingStack.push(value);
+        }
+
+        public boolean isEmptyStack() {
+            return parsingStack.isEmpty();
         }
     }
 
@@ -71,7 +86,7 @@ public class Json {
                 case "\"" -> handleString(json, state);
                 default -> new JsonNumber(new BigDecimal(match));
             };
-            if (state.stack.isEmpty()) {
+            if (state.isEmptyStack()) {
                 return parsingCompleted(json, state, value);
             }
             updateStateForArrayAndObjectParsing(state, value);
@@ -111,12 +126,12 @@ public class Json {
     }
 
     private static void updateStateForArrayAndObjectParsing(State state, JsonValue value) {
-        if (state.stack.peek().isArray()) {
+        if (state.peek().isArray()) {
             if (value != null) {
-                state.stack.peek().asArray().add(value);
+                state.peek().asArray().add(value);
                 state.expectsMoreEntries = false;
             }
-        } else if (state.stack.peek() instanceof JsonObjectKey top) {
+        } else if (state.peek() instanceof JsonObjectKey top) {
             if (value != null) {
                 if (top.key == null) {
                     if (!value.isString()) {
@@ -124,20 +139,20 @@ public class Json {
                     }
                     top.key = (JsonString) value;
                 } else {
-                    JsonObjectKey poppedKey = (JsonObjectKey) state.stack.pop();
-                    if (state.stack.isEmpty() || !state.stack.peek().isObject()) {
+                    JsonObjectKey poppedKey = (JsonObjectKey) state.pop();
+                    if (state.isEmptyStack() || !state.peek().isObject()) {
                         throw new JsonParseException("Object not found at stack when adding value from before position " + state.position);
                     }
                     if (!poppedKey.seenColon) {
                         throw new JsonParseException("Expected colon before position " + state.position);
                     }
-                    state.stack.peek().asObject().put(poppedKey.key.getString(), value);
-                    state.stack.push(new JsonObjectKey());
+                    state.peek().asObject().put(poppedKey.key.getString(), value);
+                    state.push(new JsonObjectKey());
                     state.expectsMoreEntries = false;
                 }
             }
         } else {
-            throw new JsonParseException("Unrecognized object at top of parsing stack " + state.stack.peek().getClass());
+            throw new JsonParseException("Unrecognized object at top of parsing stack " + state.peek().getClass());
         }
     }
 
@@ -177,7 +192,7 @@ public class Json {
     }
 
     private static JsonValue handleComma(State state) {
-        if (state.stack.isEmpty() || (!state.stack.peek().isArray() && !(state.stack.peek() instanceof JsonObjectKey))) {
+        if (state.isEmptyStack() || (!state.peek().isArray() && !(state.peek() instanceof JsonObjectKey))) {
             throw new JsonParseException("Found comma at position " + state.parser.start(1) + " while not parsing an array or an object");
         }
         state.expectsMoreEntries = true;
@@ -185,48 +200,48 @@ public class Json {
     }
 
     private static JsonValue handleEndObject(State state) {
-        if (state.stack.isEmpty()) {
+        if (state.isEmptyStack()) {
             throw new JsonParseException("End of object encountered at position " + state.parser.start(1) + " without having started parsing one");
         }
-        JsonValue top = state.stack.pop();
+        JsonValue top = state.pop();
         if (!(top instanceof JsonObjectKey)) {
             throw new JsonParseException("End of object encountered at position " + state.parser.start(1) + " while parsing something else");
         }
         if (((JsonObjectKey) top).key != null) {
             throw new JsonParseException("End of object encountered at position " + state.parser.start(1) + " while expecting a value");
         }
-        if (state.stack.isEmpty() || !state.stack.peek().isObject()) {
+        if (state.isEmptyStack() || !state.peek().isObject()) {
             throw new JsonParseException("End of object encountered at position " + state.parser.start(1) + " without object on parsing stack");
         }
-        return state.stack.pop();
+        return state.pop();
     }
 
     private static JsonValue handleStartObject(State state) {
-        state.stack.push(new JsonObject());
-        state.stack.push(new JsonObjectKey());
+        state.push(new JsonObject());
+        state.push(new JsonObjectKey());
         return null;
     }
 
     private static JsonValue handleEndArray(State state) {
-        if (state.stack.isEmpty() || !state.stack.peek().isArray()) {
+        if (state.isEmptyStack() || !state.peek().isArray()) {
             throw new JsonParseException("End of array encountered at position " + state.parser.start(1) + " while not parsing an array");
         }
-        return state.stack.pop();
+        return state.pop();
     }
 
     private static JsonValue handleStartArray(State state) {
-        state.stack.push(new JsonArray());
+        state.push(new JsonArray());
         return null;
     }
 
     private static JsonValue handleColon(State state) {
-        if (state.stack.isEmpty() || (!(state.stack.peek() instanceof JsonObjectKey))) {
+        if (state.isEmptyStack() || (!(state.peek() instanceof JsonObjectKey))) {
             throw new JsonParseException("Found colon at position " + state.parser.start(1) + " while not parsing an object");
         }
-        if (((JsonObjectKey) state.stack.peek()).seenColon) {
+        if (((JsonObjectKey) state.peek()).seenColon) {
             throw new JsonParseException("Multiple colons at position " + state.parser.start(1));
         }
-        ((JsonObjectKey) state.stack.peek()).seenColon = true;
+        ((JsonObjectKey) state.peek()).seenColon = true;
         return null;
     }
 
