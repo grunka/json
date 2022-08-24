@@ -16,6 +16,7 @@ import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
@@ -292,5 +293,67 @@ public class JsonTest {
         assertEquals(year, Json.objectify(Json.stringify(year), Year.class));
         YearMonth yearMonth = YearMonth.now();
         assertEquals(yearMonth, Json.objectify(Json.stringify(yearMonth), YearMonth.class));
+    }
+
+    @Test
+    public void shouldObjectifyOtherObjects() {
+        TestSubObject tso = new TestSubObject(List.of("hello", "world"), Map.of("a", List.of("A", "1"), "b", List.of("B", "2")));
+        TestObject testObject = new TestObject("String", 5, 7L, Optional.of(BigDecimal.TEN), tso);
+        String stringify = Json.stringify(testObject);
+        System.out.println("stringify = " + stringify);
+        TestObject objectify = Json.objectify(stringify, TestObject.class);
+        assertEquals(testObject, objectify);
+    }
+
+    private static class TestObject {
+        public final String s;
+        public final int i;
+        public final Long l;
+        public final Optional<BigDecimal> b;
+        public final TestSubObject tso;
+
+        private TestObject(String s, int i, Long l, Optional<BigDecimal> b, TestSubObject tso) {
+            this.s = s;
+            this.i = i;
+            this.l = l;
+            this.b = b;
+            this.tso = tso;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            TestObject that = (TestObject) o;
+            return i == that.i && Objects.equals(s, that.s) && Objects.equals(l, that.l) && Objects.equals(b, that.b) && Objects.equals(tso, that.tso);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(s, i, l, b, tso);
+        }
+    }
+
+    private static class TestSubObject {
+        public final List<String> a;
+        public final Map<String, List<String>> b;
+
+        private TestSubObject(List<String> a, Map<String, List<String>> b) {
+            this.a = a;
+            this.b = b;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            TestSubObject that = (TestSubObject) o;
+            return Objects.equals(a, that.a) && Objects.equals(b, that.b);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(a, b);
+        }
     }
 }

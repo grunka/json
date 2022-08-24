@@ -434,7 +434,7 @@ public class Json {
                 continue;
             }
             String name = field.getName();
-            JsonValue jsonValue = value.asObject().get(name);
+            JsonValue jsonValue = value.asObject().getOrDefault(name, JsonNull.NULL);
             Class<?> fieldType = field.getType();
             if (Optional.class.isAssignableFrom(fieldType)) {
                 Type[] typeArguments = ((ParameterizedType) field.getGenericType()).getActualTypeArguments();
@@ -456,7 +456,7 @@ public class Json {
                     throw new JsonObjectifyException("Encountered map named " + field.getName() + " in " + type.getSimpleName() + " with non string key");
                 }
                 try {
-                    field.set(instance, objectifyMap(jsonValue, (Class<?>) typeArguments[1]));
+                    field.set(instance, typeArguments[1] instanceof ParameterizedType ? objectifyMap(jsonValue, (ParameterizedType) typeArguments[1]) : objectifyMap(jsonValue, (Class<?>) typeArguments[1]));
                 } catch (IllegalAccessException e) {
                     throw new JsonObjectifyException("Failed to set the field named " + field.getName() + " in " + type.getSimpleName(), e);
                 }
@@ -553,6 +553,21 @@ public class Json {
         return value.asArray().stream().map(v -> objectify(v, type)).collect(Collectors.toList());
     }
 
+    private static <T> List<T> objectifyList(JsonValue value, ParameterizedType type) {
+        if (!value.isArray()) {
+            throw new JsonObjectifyException("Supplied value was not an array");
+        }
+        boolean isList = ensureListOrMap(type);
+        Type subType = type.getActualTypeArguments()[isList ? 0 : 1];
+        if (isList) {
+            //noinspection unchecked
+            return value.asArray().stream().map(v -> subType instanceof ParameterizedType ? (T) objectifyList(v, (ParameterizedType) subType) : (T) objectifyList(v, (Class<?>) subType)).collect(Collectors.toList());
+        } else {
+            //noinspection unchecked
+            return value.asArray().stream().map(v -> subType instanceof ParameterizedType ? (T) objectifyMap(v, (ParameterizedType) subType) : (T) objectifyMap(v, (Class<?>) subType)).collect(Collectors.toList());
+        }
+    }
+
     public static <V> Map<String, V> objectifyMap(String json, Class<? extends V> type) {
         return objectifyMap(parse(json), type);
     }
@@ -566,5 +581,34 @@ public class Json {
             result.put(entry.getKey(), objectify(entry.getValue(), type));
         }
         return result;
+    }
+
+    private static <V> Map<String, V> objectifyMap(JsonValue value, ParameterizedType type) {
+        if (!value.isObject()) {
+            throw new JsonObjectifyException("Supplied value is not an object");
+        }
+        boolean isList = ensureListOrMap(type);
+        Type subType = type.getActualTypeArguments()[isList ? 0 : 1];
+        Map<String, V> result = new LinkedHashMap<>();
+        for (Map.Entry<String, JsonValue> entry : value.asObject().entrySet()) {
+            if (isList) {
+                //noinspection unchecked
+                result.put(entry.getKey(), subType instanceof ParameterizedType ? (V) objectifyList(entry.getValue(), (ParameterizedType) subType) : (V) objectifyList(entry.getValue(), (Class<?>) subType));
+            } else {
+                //noinspection unchecked
+                result.put(entry.getKey(), subType instanceof ParameterizedType ? (V) objectifyMap(entry.getValue(), (ParameterizedType) subType) : (V) objectifyMap(entry.getValue(), (Class<?>) subType));
+            }
+        }
+        return result;
+    }
+
+    private static boolean ensureListOrMap(ParameterizedType type) {
+        Type rawType = type.getRawType();
+        boolean isList = List.class.isAssignableFrom((Class<?>) rawType);
+        boolean isMap = Map.class.isAssignableFrom((Class<?>) rawType);
+        if (!isList && !isMap) {
+            throw new JsonObjectifyException("Only generic classes accepted are lists and maps");
+        }
+        return isList;
     }
 }
