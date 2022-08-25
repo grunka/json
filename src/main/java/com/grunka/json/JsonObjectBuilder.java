@@ -27,6 +27,8 @@ class JsonObjectBuilder implements JsonValueBuilder {
             entries.add(currentEntry);
             currentEntry = null;
             state = JsonObjectBuilderState.EXPECTING_COMMA_OR_OBJECT_END;
+        } else {
+            throw new JsonParseException("Got value of type " + jsonValue.getClass().getSimpleName() + " in state " + state);
         }
     }
 
