@@ -143,6 +143,18 @@ public class JsonTest {
             System.out.println(e.getMessage());
         }
         try {
+            Json.parse("");
+            fail();
+        } catch (JsonParseException e) {
+            System.out.println(e.getMessage());
+        }
+        try {
+            Json.parse(" ");
+            fail();
+        } catch (JsonParseException e) {
+            System.out.println(e.getMessage());
+        }
+        try {
             Json.parse("   ");
             fail();
         } catch (JsonParseException e) {
@@ -208,6 +220,8 @@ public class JsonTest {
         assertTrue(Json.parse("[[], []]").asArray().get(0).asArray().isEmpty());
         assertTrue(Json.parse("[[], []]").asArray().get(1).asArray().isEmpty());
         assertTrue(Json.parse("[1,2,3,\"a\",\"d\",\"c\"]").isArray());
+        assertTrue(Json.parse("[1]").isArray());
+        assertTrue(Json.parse("[\"a\"]").isArray());
         assertEquals(9, Json.parse("[1,2,3,\"a\",\"d\",\"c\",true,false,null]").asArray().size());
     }
 

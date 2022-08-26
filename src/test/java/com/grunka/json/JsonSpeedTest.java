@@ -1,5 +1,6 @@
 package com.grunka.json;
 
+import com.google.gson.Gson;
 import com.grunka.json.type.JsonArray;
 import com.grunka.json.type.JsonNumber;
 import com.grunka.json.type.JsonObject;
@@ -18,15 +19,11 @@ public class JsonSpeedTest {
 
         JsonArray originalArray = makeArray(random, 2_000_000, 1);
 
-        long beforeToString = System.currentTimeMillis();
-        String arrayJson = originalArray.toString();
-        long toStringDuration = System.currentTimeMillis() - beforeToString;
-        System.out.println("Array stringify duration " + toStringDuration + "ms");
+        String arrayJson = Stopwatch.run("Array stringify", originalArray::toString);
+        JsonValue parsedArray = Stopwatch.run("Array parse", () -> Json.parse(arrayJson));
 
-        long beforeParse = System.currentTimeMillis();
-        JsonValue parsedArray = Json.parse(arrayJson);
-        long parseDuration = System.currentTimeMillis() - beforeParse;
-        System.out.println("Array parse duration " + parseDuration + "ms");
+        com.google.gson.JsonArray parsedGson = Stopwatch.run("GSON Array parse", () -> new Gson().fromJson(arrayJson, com.google.gson.JsonArray.class));
+        assertEquals(arrayJson, Stopwatch.run("GSON Array stringify", parsedGson::toString));
 
         System.out.println("Array JSON size " + (arrayJson.length() / (1024 * 1024)) + "MB");
         assertEquals(originalArray, parsedArray);
@@ -38,18 +35,14 @@ public class JsonSpeedTest {
 
         JsonObject originalObject = makeObject(random, 1_200_000, 1);
 
-        long beforeToString = System.currentTimeMillis();
-        String arrayJson = originalObject.toString();
-        long toStringDuration = System.currentTimeMillis() - beforeToString;
-        System.out.println("Object stringify duration " + toStringDuration + "ms");
+        String objectJson = Stopwatch.run("Object stringify", originalObject::toString);
+        JsonValue parsedObject = Stopwatch.run("Object parse", () -> Json.parse(objectJson));
 
-        long beforeParse = System.currentTimeMillis();
-        JsonValue parsed = Json.parse(arrayJson);
-        long parseDuration = System.currentTimeMillis() - beforeParse;
-        System.out.println("Object parse duration " + parseDuration + "ms");
+        com.google.gson.JsonObject parsedGson = Stopwatch.run("GSON Object parse", () -> new Gson().fromJson(objectJson, com.google.gson.JsonObject.class));
+        assertEquals(objectJson, Stopwatch.run("GSON Object stringify", parsedGson::toString));
 
-        System.out.println("Object JSON size " + (arrayJson.length() / (1024 * 1024)) + "MB");
-        assertEquals(originalObject, parsed);
+        System.out.println("Object JSON size " + (objectJson.length() / (1024 * 1024)) + "MB");
+        assertEquals(originalObject, parsedObject);
     }
 
     private static JsonArray makeArray(Random random, int size, int depth) {
@@ -92,4 +85,22 @@ public class JsonSpeedTest {
         return builder.toString();
     }
 
+    private static class Stopwatch {
+        private Stopwatch() {
+        }
+
+        public static <T, E extends Throwable> T run(String name, StopwatchTask<T, E> task) throws E {
+            long before = System.currentTimeMillis();
+            try {
+                return task.run();
+            } finally {
+                long duration = System.currentTimeMillis() - before;
+                System.out.println(name + " duration " + duration + "ms");
+            }
+        }
+    }
+
+    private interface StopwatchTask<T, E extends Throwable> {
+        T run() throws E;
+    }
 }

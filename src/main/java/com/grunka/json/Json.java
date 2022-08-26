@@ -31,12 +31,13 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class Json {
-    private static final Pattern PARSER_PATTERN = Pattern.compile("[ \\n\\r\\t]*(-?(?:0|[1-9][0-9]*)(?:[.][0-9]+)?(?:[eE][+-]?[0-9]+)?|null|true|false|[,:\"\\[\\]{}])");
+    private static final char[] NULL_TAIL = {'u', 'l', 'l'};
+    private static final char[] TRUE_TAIL = {'r', 'u', 'e'};
+    private static final char[] FALSE_TAIL = {'a', 'l', 's', 'e'};
 
     private Json() {
     }
@@ -45,11 +46,12 @@ public class Json {
         int position = 0;
         boolean expectsMoreEntries = false;
         boolean shiftParsingToPosition = false;
-        private final LinkedList<JsonValueBuilder> parsingStack = new LinkedList<>();
-        final Matcher parser;
 
-        private State(Matcher parser) {
-            this.parser = parser;
+        final String json;
+        private final LinkedList<JsonValueBuilder> parsingStack = new LinkedList<>();
+
+        private State(String json) {
+            this.json = json;
         }
 
         public JsonValueBuilder currentBuilder() {
@@ -67,11 +69,29 @@ public class Json {
         public boolean isBuilderMissing() {
             return parsingStack.isEmpty();
         }
+
+        public char nextChar() {
+            if (position < json.length()) {
+                return json.charAt(position++);
+            } else {
+                return (char) -1;
+            }
+        }
+
+        public void rewindChar() {
+            if (position > 0) {
+                position -= 1;
+            }
+        }
+
+        public boolean isFullyRead() {
+            return !(position < json.length());
+        }
     }
 
     public static JsonValue parse(String json) {
-        State state = new State(PARSER_PATTERN.matcher(json));
-        while (state.position < json.length()) {
+        State state = new State(json);
+        while (state.position < state.json.length()) {
             String match = nextMatch(state);
             JsonValue value = switch (match) {
                 case "null" -> JsonNull.NULL;
@@ -83,11 +103,17 @@ public class Json {
                 case "]" -> handleEndArray(state);
                 case "{" -> handleStartObject(state);
                 case "}" -> handleEndObject(state);
-                case "\"" -> handleString(json, state);
-                default -> new JsonNumber(new BigDecimal(match));
+                case "\"" -> handleString(state);
+                default -> {
+                    try {
+                        yield new JsonNumber(new BigDecimal(match));
+                    } catch (NumberFormatException e) {
+                        throw new JsonParseException("Could not parse " + match + " into a number", e);
+                    }
+                }
             };
             if (state.isBuilderMissing()) {
-                return parsingCompleted(json, state, value);
+                return parsingCompleted(state, value);
             }
             updateStateForArrayAndObjectParsing(state, value);
         }
@@ -95,27 +121,77 @@ public class Json {
     }
 
     private static String nextMatch(State state) {
-        boolean found;
-        if (state.shiftParsingToPosition) {
-            found = state.parser.find(state.position);
-            state.shiftParsingToPosition = false;
-        } else {
-            found = state.parser.find();
+        char head = state.nextChar();
+        while (state.position < state.json.length() && (head == ' ' || head == '\n' || head == '\r' || head == '\t')) {
+            head = state.nextChar();
         }
-        if (!found) {
-            throw new JsonParseException("Did not find any JSON content after position " + state.position);
-        }
-        if (state.parser.start() != state.position) {
-            throw new JsonParseException("Found non JSON content at position " + state.position);
-        }
-        String match = state.parser.group(1);
-        state.position += state.parser.group().length();
-        return match;
+        return switch (head) {
+            case 'n' -> expects(state, NULL_TAIL, "null", () -> "Failed to parse null at " + (state.position - 1));
+            case 't' -> expects(state, TRUE_TAIL, "true", () -> " Failed to parse true at " + (state.position - 1));
+            case 'f' -> expects(state, FALSE_TAIL, "false", () -> "Failed to parse false at " + (state.position - 1));
+            case '{', '}', '[', ']', ',', ':', '"' -> String.valueOf(head);
+            case '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' -> readNumber(state, head);
+            default ->
+                    throw new JsonParseException("Unexpected character '" + head + "' at position " + (state.position - 1));
+        };
     }
 
-    private static JsonValue parsingCompleted(String json, State state, JsonValue value) {
-        state.position = skipWhileWhitespace(json, state.position);
-        if (state.position == json.length()) {
+    private static String readNumber(State state, char head) {
+        int numberStartPosition = state.position - 1;
+        if (head == '-') {
+            head = state.nextChar();
+        }
+        if (head == '0') {
+            head = state.nextChar();
+            readEndOfNumber(state, head);
+        } else if (head == '1' || head == '2' || head == '3' || head == '4' || head == '5' || head == '6' || head == '7' || head == '8' || head == '9') {
+            head = readDigits(state, false, false);
+            readEndOfNumber(state, head);
+        } else {
+            throw new JsonParseException("Expected digit at position " + state.position);
+        }
+        return state.json.substring(numberStartPosition, state.position);
+    }
+
+    private static void readEndOfNumber(State state, char head) {
+        if (head == '.') {
+            head = readDigits(state, true, false);
+        }
+        if (head == 'e' || head == 'E') {
+            head = readDigits(state, true, true);
+        }
+        if (head != (char) -1) {
+            state.rewindChar();
+        }
+    }
+
+    private static char readDigits(State state, boolean atLeastOne, boolean allowPlusAndMinus) {
+        char head;
+        if (atLeastOne) {
+            head = state.nextChar();
+            if (!(head == '0' || head == '1' || head == '2' || head == '3' || head == '4' || head == '5' || head == '6' || head == '7' || head == '8' || head == '9' || (allowPlusAndMinus && (head == '+' || head == '-')))) {
+                throw new JsonParseException("Expected digit at position " + state.position);
+            }
+        }
+        do {
+            head = state.nextChar();
+        } while (head == '0' || head == '1' || head == '2' || head == '3' || head == '4' || head == '5' || head == '6' || head == '7' || head == '8' || head == '9');
+        return head;
+    }
+
+    private static String expects(State state, char[] expected, String result, Supplier<String> failureMessage) {
+        for (char c : expected) {
+            if (state.nextChar() != c) {
+                throw new JsonParseException(failureMessage.get());
+            }
+        }
+        return result;
+    }
+
+    private static JsonValue parsingCompleted(State state, JsonValue value) {
+        //noinspection StatementWithEmptyBody
+        while (isWhitespace(state.nextChar())) ;
+        if (state.isFullyRead()) {
             if (state.expectsMoreEntries) {
                 throw new JsonParseException("Parsing ended with a dangling comma");
             }
@@ -127,18 +203,18 @@ public class Json {
 
     private static void updateStateForArrayAndObjectParsing(State state, JsonValue value) {
         if (state.isBuilderMissing()) {
-            throw new JsonParseException("Found value at position " + state.parser.start(1) + " while not parsing an array or an object");
+            throw new JsonParseException("Found value at position " + state.position + " while not parsing an array or an object");
         }
         if (value != null) {
             state.currentBuilder().accept(value);
         }
     }
 
-    private static JsonString handleString(String json, State state) {
+    private static JsonString handleString(State state) {
         StringBuilder builder = new StringBuilder();
         boolean escape = false;
         while (true) {
-            char c = json.charAt(state.position++);
+            char c = state.nextChar();
             if (escape) {
                 switch (c) {
                     case '\\' -> builder.append('\\');
@@ -150,7 +226,7 @@ public class Json {
                     case 'r' -> builder.append('\r');
                     case 't' -> builder.append('\t');
                     case 'u' -> {
-                        builder.append(Character.toString(Integer.parseInt(json.substring(state.position, state.position + 4), 16)));
+                        builder.append(Character.toString(Integer.parseInt(state.json.substring(state.position, state.position + 4), 16)));
                         state.position += 4;
                     }
                 }
@@ -171,7 +247,7 @@ public class Json {
 
     private static JsonValue handleComma(State state) {
         if (state.isBuilderMissing()) {
-            throw new JsonParseException("Found comma at position " + state.parser.start(1) + " while not parsing an array or an object");
+            throw new JsonParseException("Found comma at position " + state.position + " while not parsing an array or an object");
         }
         state.currentBuilder().acceptComma();
         return null;
@@ -179,11 +255,11 @@ public class Json {
 
     private static JsonValue handleEndObject(State state) {
         if (state.isBuilderMissing()) {
-            throw new JsonParseException("End of object encountered at position " + state.parser.start(1) + " without having started parsing one");
+            throw new JsonParseException("End of object encountered at position " + state.position + " without having started parsing one");
         }
         JsonValue value = state.buildFromStack();
         if (!(value instanceof JsonObject)) {
-            throw new JsonParseException("End of object encountered at position " + state.parser.start(1) + " but did not have object at top of stack");
+            throw new JsonParseException("End of object encountered at position " + state.position + " but did not have object at top of stack");
         }
         return value;
     }
@@ -195,11 +271,11 @@ public class Json {
 
     private static JsonValue handleEndArray(State state) {
         if (state.isBuilderMissing()) {
-            throw new JsonParseException("End of array encountered at position " + state.parser.start(1) + " while not parsing any array");
+            throw new JsonParseException("End of array encountered at position " + state.position + " while not parsing any array");
         }
         JsonValue value = state.buildFromStack();
         if (!(value instanceof JsonArray)) {
-            throw new JsonParseException("End of array encountered at position " + state.parser.start(1) + " while array not on top of stack");
+            throw new JsonParseException("End of array encountered at position " + state.position + " while array not on top of stack");
         }
         return value;
     }
@@ -211,18 +287,10 @@ public class Json {
 
     private static JsonValue handleColon(State state) {
         if (state.isBuilderMissing()) {
-            throw new JsonParseException("Found colon at position " + state.parser.start(1) + " while not parsing any object");
+            throw new JsonParseException("Found colon at position " + state.position + " while not parsing any object");
         }
         state.currentBuilder().acceptColon();
         return null;
-    }
-
-    private static int skipWhileWhitespace(String json, int position) {
-        int length = json.length();
-        while (position < length && isWhitespace(json.charAt(position))) {
-            position++;
-        }
-        return position;
     }
 
     private static boolean isWhitespace(char c) {
