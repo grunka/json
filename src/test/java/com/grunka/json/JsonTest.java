@@ -187,6 +187,7 @@ public class JsonTest {
         assertTrue(Json.parse("   \t\r\n  \"hello \\\"world\\\"\" \t\r   \n  ").isString());
         assertEquals("hello \"world\"", Json.parse("   \t\r\n  \"hello \\\"world\\\"\" \t\r   \n  ").asString().getString());
         assertEquals("hello\n\t\r world", Json.parse("\"hello\\n\\t\\r\\u0020world\"").asString().getString());
+        assertEquals("💀", Json.parse("\"💀\"").asString().getString());
     }
 
     @Test
