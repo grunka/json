@@ -44,8 +44,6 @@ public class Json {
 
     private static class State {
         int position = 0;
-        boolean expectsMoreEntries = false;
-        boolean shiftParsingToPosition = false;
 
         final String json;
         private final LinkedList<JsonValueBuilder> parsingStack = new LinkedList<>();
@@ -192,9 +190,6 @@ public class Json {
         //noinspection StatementWithEmptyBody
         while (isWhitespace(state.nextChar())) ;
         if (state.isFullyRead()) {
-            if (state.expectsMoreEntries) {
-                throw new JsonParseException("Parsing ended with a dangling comma");
-            }
             return value;
         } else {
             throw new JsonParseException("Non parsable data found at end of input");
@@ -241,7 +236,6 @@ public class Json {
                 }
             }
         }
-        state.shiftParsingToPosition = true;
         return new JsonString(builder.toString());
     }
 
