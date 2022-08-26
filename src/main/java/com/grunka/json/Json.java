@@ -127,7 +127,13 @@ public class Json {
             case 'n' -> expects(state, NULL_TAIL, "null", () -> "Failed to parse null at " + (state.position - 1));
             case 't' -> expects(state, TRUE_TAIL, "true", () -> " Failed to parse true at " + (state.position - 1));
             case 'f' -> expects(state, FALSE_TAIL, "false", () -> "Failed to parse false at " + (state.position - 1));
-            case '{', '}', '[', ']', ',', ':', '"' -> String.valueOf(head);
+            case '{' -> "{";
+            case '}' -> "}";
+            case '[' -> "[";
+            case ']' -> "]";
+            case ',' -> ",";
+            case ':' -> ":";
+            case '"' -> "\"";
             case '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' -> readNumber(state, head);
             default ->
                     throw new JsonParseException("Unexpected character '" + head + "' at position " + (state.position - 1));
