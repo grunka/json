@@ -374,25 +374,53 @@ public class Json {
                     Iterator<JsonValue> iterator = value.asArray().iterator();
                     int arrayPosition = 0;
                     while (iterator.hasNext()) {
-                        queue.add(arrayPosition++, iterator.next());
+                        JsonValue jsonValue = iterator.next();
+                        if (queue.isEmpty() && jsonValue.isPrimitive()) {
+                            output.append(jsonValue);
+                        } else {
+                            queue.add(arrayPosition++, jsonValue);
+                        }
                         if (iterator.hasNext()) {
-                            queue.add(arrayPosition++, ",");
+                            if (queue.isEmpty()) {
+                                output.append(",");
+                            } else {
+                                queue.add(arrayPosition++, ",");
+                            }
                         }
                     }
-                    queue.add(arrayPosition, "]");
+                    if (queue.isEmpty()) {
+                        output.append("]");
+                    } else {
+                        queue.add(arrayPosition, "]");
+                    }
                 } else if (value.isObject()) {
                     output.append("{");
                     Iterator<Map.Entry<String, JsonValue>> iterator = value.asObject().entrySet().iterator();
                     int mapPosition = 0;
                     while (iterator.hasNext()) {
                         Map.Entry<String, JsonValue> entry = iterator.next();
-                        queue.add(mapPosition++, new JsonString(entry.getKey()) + ":");
-                        queue.add(mapPosition++, entry.getValue());
+                        String key = new JsonString(entry.getKey()) + ":";
+                        JsonValue jsonValue = entry.getValue();
+                        if (queue.isEmpty() && jsonValue.isPrimitive()) {
+                            output.append(key);
+                            output.append(jsonValue);
+                        } else {
+                            queue.add(mapPosition++, key);
+                            queue.add(mapPosition++, jsonValue);
+                        }
                         if (iterator.hasNext()) {
-                            queue.add(mapPosition++, ",");
+                            if (queue.isEmpty()) {
+                                output.append(",");
+                            } else {
+                                queue.add(mapPosition++, ",");
+                            }
                         }
                     }
-                    queue.add(mapPosition, "}");
+                    if (queue.isEmpty()) {
+                        output.append("}");
+                    } else {
+                        queue.add(mapPosition, "}");
+                    }
                 } else {
                     throw new JsonStringifyException("Could not convert " + value + " to string");
                 }
