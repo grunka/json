@@ -1,14 +1,8 @@
 package com.grunka.json.type;
 
-import com.grunka.json.JsonStringifyException;
-
 import java.util.Objects;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class JsonString extends JsonValue {
-    private static final Pattern STRING_ESCAPE_CHARACTERS = Pattern.compile("[\"\b\f\n\r\t\\\\]");
-
     private final String value;
 
     public JsonString(String value) {
@@ -17,30 +11,37 @@ public class JsonString extends JsonValue {
 
     @Override
     public String toString() {
-        return '"' + encodeString(value) + '"';
+        StringBuilder builder = new StringBuilder();
+        builder.append('"');
+        for (int i = 0; i < value.length(); i++) {
+            char c = value.charAt(i);
+            switch (c) {
+                case '\"' -> builder.append("\\\"");
+                case '\b' -> builder.append("\\b");
+                case '\f' -> builder.append("\\f");
+                case '\n' -> builder.append("\\n");
+                case '\r' -> builder.append("\\r");
+                case '\t' -> builder.append("\\t");
+                case '\\' -> builder.append("\\\\");
+                default -> {
+                    if (c >= 0x20) {
+                        builder.append(c);
+                    } else {
+                        String hex = Integer.toHexString(c);
+                        builder.append("\\u");
+                        builder.append("0".repeat((4 - hex.length())));
+                        builder.append(hex);
+                    }
+                }
+            }
+        }
+        builder.append('"');
+        return builder.toString();
     }
 
     @Override
     public boolean isPrimitive() {
         return true;
-    }
-
-    private static String encodeString(String contents) {
-        Matcher matcher = STRING_ESCAPE_CHARACTERS.matcher(contents);
-        return matcher.replaceAll(result -> {
-            String replacement;
-            switch (result.group()) {
-                case "\"" -> replacement = "\\\\\"";
-                case "\b" -> replacement = "\\\\b";
-                case "\f" -> replacement = "\\\\f";
-                case "\n" -> replacement = "\\\\n";
-                case "\r" -> replacement = "\\\\r";
-                case "\t" -> replacement = "\\\\t";
-                case "\\" -> replacement = "\\\\\\\\";
-                default -> throw new JsonStringifyException("Unrecognized replacement");
-            }
-            return replacement;
-        });
     }
 
     public String getString() {
