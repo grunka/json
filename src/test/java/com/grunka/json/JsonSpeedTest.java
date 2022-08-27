@@ -52,7 +52,7 @@ public class JsonSpeedTest {
         }
         for (int i = 0; i < size; i++) {
             if (random.nextDouble() < 0.4) {
-                array.add(new JsonNumber(BigDecimal.valueOf(random.nextDouble())));
+                array.add(new JsonNumber(BigDecimal.valueOf(random.nextDouble()).toPlainString()));
             } else {
                 array.add(makeArray(random, size, depth - 1));
             }
@@ -68,7 +68,7 @@ public class JsonSpeedTest {
         for (int i = 0; i < size; i++) {
             String key = makeString(random, 6);
             if (random.nextDouble() < 0.4) {
-                object.put(key, new JsonNumber(BigDecimal.valueOf(random.nextDouble())));
+                object.put(key, new JsonNumber(BigDecimal.valueOf(random.nextDouble()).toPlainString()));
             } else {
                 object.put(key, makeObject(random, size, depth - 1));
             }

@@ -89,7 +89,7 @@ public class Json {
 
     public static JsonValue parse(String json) {
         State state = new State(json);
-        while (state.position < state.json.length()) {
+        while (!state.isFullyRead()) {
             String match = nextMatch(state);
             JsonValue value = switch (match) {
                 case "null" -> JsonNull.NULL;
@@ -102,13 +102,7 @@ public class Json {
                 case "{" -> handleStartObject(state);
                 case "}" -> handleEndObject(state);
                 case "\"" -> handleString(state);
-                default -> {
-                    try {
-                        yield new JsonNumber(new BigDecimal(match));
-                    } catch (NumberFormatException e) {
-                        throw new JsonParseException("Could not parse " + match + " into a number", e);
-                    }
-                }
+                default -> new JsonNumber(match);
             };
             if (state.isBuilderMissing()) {
                 return parsingCompleted(state, value);
@@ -120,7 +114,7 @@ public class Json {
 
     private static String nextMatch(State state) {
         char head = state.nextChar();
-        while (state.position < state.json.length() && (head == ' ' || head == '\n' || head == '\r' || head == '\t')) {
+        while (!state.isFullyRead() && (head == ' ' || head == '\n' || head == '\r' || head == '\t')) {
             head = state.nextChar();
         }
         return switch (head) {

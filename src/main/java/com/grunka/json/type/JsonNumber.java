@@ -5,27 +5,28 @@ import java.math.BigInteger;
 import java.util.Objects;
 
 public class JsonNumber extends JsonValue implements Comparable<JsonNumber> {
-    private final BigDecimal number;
+    private final String number;
 
     public JsonNumber(Number number) {
         Objects.requireNonNull(number, "Value cannot be null");
         if (number instanceof BigDecimal) {
-            this.number = (BigDecimal) number;
+            this.number = ((BigDecimal) number).toPlainString();
         } else if (number instanceof BigInteger) {
-            this.number = new BigDecimal((BigInteger) number);
-        } else if (number instanceof Integer) {
-            this.number = BigDecimal.valueOf((Integer) number);
-        } else if (number instanceof Long) {
-            this.number = BigDecimal.valueOf((Long) number);
-        } else if (number instanceof Double) {
-            this.number = BigDecimal.valueOf((Double) number);
+            this.number = number.toString();
+        } else if (number instanceof Integer i) {
+            this.number = Integer.toString(i);
+        } else if (number instanceof Long l) {
+            this.number = Long.toString(l);
+        } else if (number instanceof Double d) {
+            this.number = Double.toString(d);
         } else {
             throw new IllegalArgumentException("Cannot create JsonNumber from " + number.getClass().getSimpleName());
         }
     }
 
     public JsonNumber(String number) {
-        this(new BigDecimal(number));
+        Objects.requireNonNull(number, "Value cannot be null");
+        this.number = number;
     }
 
     @Override
@@ -34,12 +35,12 @@ public class JsonNumber extends JsonValue implements Comparable<JsonNumber> {
     }
 
     public BigDecimal getBigDecimal() {
-        return number;
+        return new BigDecimal(number);
     }
 
     @Override
     public String toString() {
-        return number.toPlainString();
+        return number;
     }
 
     @Override
