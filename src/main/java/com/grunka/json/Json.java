@@ -114,7 +114,7 @@ public class Json {
 
     private static String nextMatch(State state) {
         char head = state.nextChar();
-        while (!state.isFullyRead() && (head == ' ' || head == '\n' || head == '\r' || head == '\t')) {
+        while (!state.isFullyRead() && isWhitespace(head)) {
             head = state.nextChar();
         }
         return switch (head) {
