@@ -228,6 +228,7 @@ public class Json {
                         builder.append(Character.toString(Integer.parseInt(state.substring(state.position, 4), 16)));
                         state.position += 4;
                     }
+                    default -> throw new JsonParseException("Unrecognized escape character " + c);
                 }
                 escape = false;
             } else {
