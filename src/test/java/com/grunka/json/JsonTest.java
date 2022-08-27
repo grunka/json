@@ -274,8 +274,10 @@ public class JsonTest {
     public void shouldObjectifyPrimitiveObjects() {
         assertEquals("hello world", Json.objectify("\"hello world\"", String.class));
         assertTrue(Json.objectify("true", Boolean.class));
+        assertTrue(Json.objectify("true ", Boolean.class));
         assertTrue(Json.objectify("true", boolean.class));
         assertNull(Json.objectify("null", String.class));
+        assertEquals((Integer) 0, Json.objectify("0", Integer.class));
         assertEquals((Integer) 1, Json.objectify("1", Integer.class));
         assertEquals(1, (int) Json.objectify("1", int.class));
         assertEquals((Long) 1L, Json.objectify("1", Long.class));
