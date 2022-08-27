@@ -45,11 +45,11 @@ public class Json {
     private static class State {
         int position = 0;
 
-        final String json;
+        final char[] json;
         private final LinkedList<JsonValueBuilder> parsingStack = new LinkedList<>();
 
         private State(String json) {
-            this.json = json;
+            this.json = json.toCharArray();
         }
 
         public JsonValueBuilder currentBuilder() {
@@ -69,8 +69,8 @@ public class Json {
         }
 
         public char nextChar() {
-            if (position < json.length()) {
-                return json.charAt(position++);
+            if (position < json.length) {
+                return json[position++];
             } else {
                 return (char) -1;
             }
@@ -83,7 +83,11 @@ public class Json {
         }
 
         public boolean isFullyRead() {
-            return !(position < json.length());
+            return !(position < json.length);
+        }
+
+        public String substring(int index, int length) {
+            return new String(json, index, length);
         }
     }
 
@@ -142,13 +146,13 @@ public class Json {
         if (head == '0') {
             head = state.nextChar();
             readEndOfNumber(state, head);
-        } else if (head == '1' || head == '2' || head == '3' || head == '4' || head == '5' || head == '6' || head == '7' || head == '8' || head == '9') {
+        } else if (head >= '1' && head <= '9') {
             head = readDigits(state, false, false);
             readEndOfNumber(state, head);
         } else {
             throw new JsonParseException("Expected digit at position " + state.position);
         }
-        return state.json.substring(numberStartPosition, state.position);
+        return state.substring(numberStartPosition, state.position - numberStartPosition);
     }
 
     private static void readEndOfNumber(State state, char head) {
@@ -167,13 +171,13 @@ public class Json {
         char head;
         if (atLeastOne) {
             head = state.nextChar();
-            if (!(head == '0' || head == '1' || head == '2' || head == '3' || head == '4' || head == '5' || head == '6' || head == '7' || head == '8' || head == '9' || (allowPlusAndMinus && (head == '+' || head == '-')))) {
+            if (!((head >= '0' && head <= '9') || (allowPlusAndMinus && (head == '+' || head == '-')))) {
                 throw new JsonParseException("Expected digit at position " + state.position);
             }
         }
         do {
             head = state.nextChar();
-        } while (head == '0' || head == '1' || head == '2' || head == '3' || head == '4' || head == '5' || head == '6' || head == '7' || head == '8' || head == '9');
+        } while (head >= '0' && head <= '9');
         return head;
     }
 
@@ -221,7 +225,7 @@ public class Json {
                     case 'r' -> builder.append('\r');
                     case 't' -> builder.append('\t');
                     case 'u' -> {
-                        builder.append(Character.toString(Integer.parseInt(state.json.substring(state.position, state.position + 4), 16)));
+                        builder.append(Character.toString(Integer.parseInt(state.substring(state.position, 4), 16)));
                         state.position += 4;
                     }
                 }
