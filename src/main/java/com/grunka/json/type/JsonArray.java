@@ -49,7 +49,6 @@ public class JsonArray extends JsonValue implements List<JsonValue> {
 
     @Override
     public <T> T[] toArray(T[] a) {
-        //noinspection SuspiciousToArrayCall
         return values.toArray(a);
     }
 

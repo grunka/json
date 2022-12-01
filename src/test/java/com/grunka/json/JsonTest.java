@@ -249,7 +249,7 @@ public class JsonTest {
         assertEquals("{\"a\":\"ONE\",\"b\":\"TWO\",\"c\":3,\"e\":\"2022-08-03T19:23:00Z\",\"g\":\"G\"}", Json.stringify(new Thing("ONE", "TWO", 3, null, Instant.parse("2022-08-03T19:23:00Z"), Optional.empty(), Optional.of("G"))));
     }
 
-    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+    @SuppressWarnings({"OptionalUsedAsFieldOrParameterType", "ClassCanBeRecord", "FieldCanBeLocal", "unused"})
     private static class Thing {
         private final String a;
         public final String b;
@@ -322,6 +322,7 @@ public class JsonTest {
         assertEquals(testObject, objectify);
     }
 
+    @SuppressWarnings({"ClassCanBeRecord", "OptionalUsedAsFieldOrParameterType"})
     private static class TestObject {
         public final String s;
         public final int i;
@@ -351,6 +352,7 @@ public class JsonTest {
         }
     }
 
+    @SuppressWarnings("ClassCanBeRecord")
     private static class TestSubObject {
         public final List<String> a;
         public final Map<String, List<String>> b;
@@ -373,4 +375,15 @@ public class JsonTest {
             return Objects.hash(a, b);
         }
     }
+
+    @Test
+    public void shouldHandleRecords() {
+        TestRecord original = new TestRecord("Hello World", 42);
+        String json = Json.stringify(original);
+        assertEquals("{\"a\":\"Hello World\",\"b\":42}", json);
+        TestRecord parsed = Json.objectify(json, TestRecord.class);
+        assertEquals(original, parsed);
+    }
+
+    private record TestRecord(String a, int b) {}
 }
