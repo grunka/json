@@ -12,6 +12,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.RecordComponent;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -462,7 +463,38 @@ public class Json {
         if (Temporal.class.isAssignableFrom(type)) {
             return convertTemporal(value, type);
         }
+        if (type.isRecord()) {
+            return convertRecord(value, type);
+        }
         return convertObject(value, type);
+    }
+
+    private static <T> T convertRecord(JsonValue value, Class<? extends T> type) {
+        if (!value.isObject()) {
+            throw new JsonObjectifyException("Cannot create record of type " + type.getName() + " from " + value.getClass().getName() + " instead of JsonObject");
+        }
+        JsonObject object = value.asObject();
+        RecordComponent[] recordComponents = type.getRecordComponents();
+        Object[] constructorParameters = new Object[recordComponents.length];
+        Class<?>[] constructorTypes = new Class<?>[recordComponents.length];
+        for (int i = 0; i < recordComponents.length; i++) {
+            RecordComponent recordComponent = recordComponents[i];
+            Class<?> recordComponentType = recordComponent.getType();
+            constructorTypes[i] = recordComponentType;
+            JsonValue constructorParameterValue = object.get(recordComponent.getName());
+            if (constructorParameterValue != null) {
+                constructorParameters[i] = Json.objectify(constructorParameterValue, recordComponentType);
+            } else {
+                constructorParameters[i] = getDefaultValueForType(recordComponentType);
+            }
+        }
+        try {
+            Constructor<? extends T> declaredConstructor = type.getDeclaredConstructor(constructorTypes);
+            declaredConstructor.trySetAccessible();
+            return declaredConstructor.newInstance(constructorParameters);
+        } catch (NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e) {
+            throw new JsonObjectifyException("Could not construct record of type " + type.getName(), e);
+        }
     }
 
     private static <T> T convertObject(JsonValue value, Class<? extends T> type) {
@@ -483,21 +515,7 @@ public class Json {
         Object[] constructorParameters = new Object[numberOfConstructorParameters];
         Class<?>[] parameterTypes = selectedConstructor.getParameterTypes();
         for (int i = 0; i < numberOfConstructorParameters; i++) {
-            if (parameterTypes[i] == int.class) {
-                constructorParameters[i] = 0;
-            } else if (parameterTypes[i] == long.class) {
-                constructorParameters[i] = 0L;
-            } else if (parameterTypes[i] == float.class) {
-                constructorParameters[i] = 0f;
-            } else if (parameterTypes[i] == double.class) {
-                constructorParameters[i] = 0.0;
-            } else if (parameterTypes[i] == boolean.class) {
-                constructorParameters[i] = false;
-            } else if (parameterTypes[i] == byte.class) {
-                constructorParameters[i] = (byte) 0;
-            } else if (parameterTypes[i] == short.class) {
-                constructorParameters[i] = (short) 0;
-            }
+            constructorParameters[i] = getDefaultValueForType(parameterTypes[i]);
         }
         Object instance;
         try {
@@ -547,6 +565,26 @@ public class Json {
         }
         //noinspection unchecked
         return (T) instance;
+    }
+
+    private static Object getDefaultValueForType(Class<?> type) {
+        if (type == int.class) {
+            return 0;
+        } else if (type == long.class) {
+            return 0L;
+        } else if (type == float.class) {
+            return 0f;
+        } else if (type == double.class) {
+            return 0.0;
+        } else if (type == boolean.class) {
+            return false;
+        } else if (type == byte.class) {
+            return (byte) 0;
+        } else if (type == short.class) {
+            return (short) 0;
+        } else {
+            return null;
+        }
     }
 
     private static <T> T convertTemporal(JsonValue value, Class<? extends T> type) {

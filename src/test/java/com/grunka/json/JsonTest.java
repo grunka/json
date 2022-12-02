@@ -378,13 +378,6 @@ public class JsonTest {
 
     @Test
     public void shouldHandleRecords() {
-        //TODO idea of how to solve this
-        // 1. Annotations: Don't really like them though
-        // 2. Mapper function: might be nice (JsonObject) -> T. Maybe supply several?
-        //    Json.objectify(json, object -> new TestRecord(object.get("a"), object.get("b"))
-        //    Json.objectify(json, object -> new TestRecord(object.get("a"), object.get("b"), ... sub types that might be needed ...?)
-        //    Json.objectify(json, object -> new TestRecord(object.get("a"), Json.objectify(object.get("complex"), x -> new XYZ(x.get("something")))
-        // 3. More reflection: It's bad as it is, but if there is something nice in there
         TestRecord original = new TestRecord("Hello World", 42);
         String json = Json.stringify(original);
         assertEquals("{\"a\":\"Hello World\",\"b\":42}", json);
@@ -392,5 +385,13 @@ public class JsonTest {
         assertEquals(original, parsed);
     }
 
-    private record TestRecord(String a, int b) {}
+    @Test
+    public void shouldHandleRecordsWithNoContent() {
+        TestRecord parsed = Json.objectify("{}", TestRecord.class);
+        assertNull(parsed.a());
+        assertEquals(0, parsed.b());
+    }
+
+    private record TestRecord(String a, int b) {
+    }
 }
