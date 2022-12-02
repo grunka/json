@@ -467,7 +467,7 @@ public class Json {
 
     private static <T> T convertObject(JsonValue value, Class<? extends T> type) {
         if (!value.isObject()) {
-            throw new JsonObjectifyException("Cannot create object of type " + type.getSimpleName() + " from " + value.getClass().getSimpleName() + " instead of JsonObject");
+            throw new JsonObjectifyException("Cannot create object of type " + type.getName() + " from " + value.getClass().getName() + " instead of JsonObject");
         }
         int numberOfConstructorParameters = Integer.MAX_VALUE;
         Constructor<?> selectedConstructor = null;
@@ -478,7 +478,7 @@ public class Json {
             }
         }
         if (selectedConstructor == null) {
-            throw new JsonObjectifyException("Could not find a constructor for " + type.getSimpleName());
+            throw new JsonObjectifyException("Could not find a constructor for " + type.getName());
         }
         Object[] constructorParameters = new Object[numberOfConstructorParameters];
         Class<?>[] parameterTypes = selectedConstructor.getParameterTypes();
@@ -504,7 +504,7 @@ public class Json {
             selectedConstructor.trySetAccessible();
             instance = selectedConstructor.newInstance(constructorParameters);
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-            throw new JsonObjectifyException("Could not instantiate a " + type.getSimpleName(), e);
+            throw new JsonObjectifyException("Could not instantiate a " + type.getName(), e);
         }
         for (Field field : type.getDeclaredFields()) {
             if (!field.trySetAccessible()) {
@@ -518,30 +518,30 @@ public class Json {
                 try {
                     field.set(instance, Optional.ofNullable(objectify(jsonValue, (Class<?>) typeArguments[0])));
                 } catch (IllegalAccessException e) {
-                    throw new JsonObjectifyException("Failed to set the field named " + field.getName() + " in " + type.getSimpleName(), e);
+                    throw new JsonObjectifyException("Failed to set the field named " + field.getName() + " in " + type.getName(), e);
                 }
             } else if (List.class.isAssignableFrom(fieldType)) {
                 Type[] typeArguments = ((ParameterizedType) field.getGenericType()).getActualTypeArguments();
                 try {
                     field.set(instance, objectifyList(jsonValue, (Class<?>) typeArguments[0]));
                 } catch (IllegalAccessException e) {
-                    throw new JsonObjectifyException("Failed to set the field named " + field.getName() + " in " + type.getSimpleName(), e);
+                    throw new JsonObjectifyException("Failed to set the field named " + field.getName() + " in " + type.getName(), e);
                 }
             } else if (Map.class.isAssignableFrom(fieldType)) {
                 Type[] typeArguments = ((ParameterizedType) field.getGenericType()).getActualTypeArguments();
                 if (typeArguments[0] != String.class) {
-                    throw new JsonObjectifyException("Encountered map named " + field.getName() + " in " + type.getSimpleName() + " with non string key");
+                    throw new JsonObjectifyException("Encountered map named " + field.getName() + " in " + type.getName() + " with non string key");
                 }
                 try {
                     field.set(instance, typeArguments[1] instanceof ParameterizedType ? objectifyMap(jsonValue, (ParameterizedType) typeArguments[1]) : objectifyMap(jsonValue, (Class<?>) typeArguments[1]));
                 } catch (IllegalAccessException e) {
-                    throw new JsonObjectifyException("Failed to set the field named " + field.getName() + " in " + type.getSimpleName(), e);
+                    throw new JsonObjectifyException("Failed to set the field named " + field.getName() + " in " + type.getName(), e);
                 }
             } else {
                 try {
                     field.set(instance, objectify(jsonValue, fieldType));
                 } catch (IllegalAccessException e) {
-                    throw new JsonObjectifyException("Failed to set the field named " + field.getName() + " in " + type.getSimpleName(), e);
+                    throw new JsonObjectifyException("Failed to set the field named " + field.getName() + " in " + type.getName(), e);
                 }
             }
         }
@@ -551,7 +551,7 @@ public class Json {
 
     private static <T> T convertTemporal(JsonValue value, Class<? extends T> type) {
         if (!value.isString()) {
-            throw new JsonObjectifyException("Trying to get a temporal value from " + value.getClass().getSimpleName() + " instead of a JsonString");
+            throw new JsonObjectifyException("Trying to get a temporal value from " + value.getClass().getName() + " instead of a JsonString");
         }
         if (type == Instant.class) {
             //noinspection unchecked
@@ -585,12 +585,12 @@ public class Json {
             //noinspection unchecked
             return (T) ZonedDateTime.parse(value.asString().getString());
         }
-        throw new JsonObjectifyException("Do not have an implementation that converts a string to " + type.getSimpleName());
+        throw new JsonObjectifyException("Do not have an implementation that converts a string to " + type.getName());
     }
 
     private static <T> T convertNumber(JsonValue value, Class<? extends T> type) {
         if (!value.isNumber()) {
-            throw new JsonObjectifyException("Trying to get number from " + value.getClass().getSimpleName());
+            throw new JsonObjectifyException("Trying to get number from " + value.getClass().getName());
         }
         if (type == int.class || type == Integer.class) {
             //noinspection unchecked
@@ -616,7 +616,7 @@ public class Json {
             //noinspection unchecked
             return (T) value.asNumber().getBigDecimal();
         }
-        throw new JsonObjectifyException("Do not have an implementation that converts a number to " + type.getSimpleName());
+        throw new JsonObjectifyException("Do not have an implementation that converts a number to " + type.getName());
     }
 
     public static <T> List<T> objectifyList(String json, Class<? extends T> type) {
