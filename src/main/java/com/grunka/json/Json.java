@@ -8,12 +8,7 @@ import com.grunka.json.type.JsonObject;
 import com.grunka.json.type.JsonString;
 import com.grunka.json.type.JsonValue;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.RecordComponent;
-import java.lang.reflect.Type;
+import java.lang.reflect.*;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -318,7 +313,15 @@ public class Json {
         }
         if (input instanceof Map<?, ?> map) {
             JsonObject object = new JsonObject();
-            map.forEach((key, value) -> object.put(String.valueOf(key), valuefy(value)));
+            map.forEach((key, value) -> {
+                String keyValue;
+                if (key.getClass() == String.class) {
+                    keyValue = (String) key;
+                } else {
+                    keyValue = stringify(key);
+                }
+                object.put(keyValue, valuefy(value));
+            });
             return object;
         }
         if (input instanceof Collection<?> collection) {
@@ -683,17 +686,32 @@ public class Json {
         }
     }
 
-    public static <V> Map<String, V> objectifyMap(String json, Class<? extends V> type) {
-        return objectifyMap(parse(json), type);
+    public static <V> Map<String, V> objectifyMap(String json, Class<? extends V> valueType) {
+        return objectifyMap(parse(json), String.class, valueType);
     }
 
-    public static <V> Map<String, V> objectifyMap(JsonValue value, Class<? extends V> type) {
+    public static <K, V> Map<K, V> objectifyMap(String json, Class<? extends K> keyType, Class<? extends V> valueType) {
+        return objectifyMap(parse(json), keyType, valueType);
+    }
+
+    public static <V> Map<String, V> objectifyMap(JsonValue value, Class<? extends V> valueType) {
+        return objectifyMap(value, String.class, valueType);
+    }
+
+    public static <K, V> Map<K, V> objectifyMap(JsonValue value, Class<? extends K> keyType, Class<? extends V> valueType) {
         if (!value.isObject()) {
             throw new JsonObjectifyException("Supplied value is not an object");
         }
-        Map<String, V> result = new LinkedHashMap<>();
+        Map<K, V> result = new LinkedHashMap<>();
         for (Map.Entry<String, JsonValue> entry : value.asObject().entrySet()) {
-            result.put(entry.getKey(), objectify(entry.getValue(), type));
+            K key;
+            if (keyType == String.class) {
+                //noinspection unchecked
+                key = (K) entry.getKey();
+            } else {
+                key = objectify(entry.getKey(), keyType);
+            }
+            result.put(key, objectify(entry.getValue(), valueType));
         }
         return result;
     }

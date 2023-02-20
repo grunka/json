@@ -290,6 +290,7 @@ public class JsonTest {
         assertEquals(BigInteger.ONE, Json.objectify("1", BigInteger.class));
         assertEquals(List.of("hello", "world"), Json.objectifyList("[\"hello\",\"world\"]", String.class));
         assertEquals(Map.of("hello", "world"), Json.objectifyMap("{\"hello\":\"world\"}", String.class));
+        assertEquals(Map.of(new KeyObject("hello", 0), "world"), Json.objectifyMap("{\"{\\\"name\\\":\\\"hello\\\",\\\"value\\\":0}\":\"world\"}", KeyObject.class, String.class));
     }
 
     @Test
@@ -394,4 +395,22 @@ public class JsonTest {
 
     private record TestRecord(String a, int b) {
     }
+
+    @Test
+    public void shouldHandleComplexMapKeys() {
+        ComplexMapKeyContainer input = new ComplexMapKeyContainer(Map.of(new KeyObject("Hello", 2), new ValueObject("World", 42)));
+        String json = Json.stringify(input);
+        ComplexMapKeyContainer parsed = Json.objectify(json, ComplexMapKeyContainer.class);
+        assertEquals(input, parsed);
+    }
+
+    private record ComplexMapKeyContainer(Map<KeyObject, ValueObject> data) {}
+
+    private record KeyObject(String name, int value) {
+        @Override
+        public String toString() {
+            throw new UnsupportedOperationException();
+        }
+    }
+    private record ValueObject(String value, int priority) {}
 }
