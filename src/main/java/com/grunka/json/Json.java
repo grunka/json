@@ -20,13 +20,7 @@ import java.time.Year;
 import java.time.YearMonth;
 import java.time.ZonedDateTime;
 import java.time.temporal.Temporal;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -129,8 +123,7 @@ public class Json {
             case ':' -> ":";
             case '"' -> "\"";
             case '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' -> readNumber(state, head);
-            default ->
-                    throw new JsonParseException("Unexpected character '" + head + "' at position " + (state.position - 1));
+            default -> throw new JsonParseException("Unexpected character '" + head + "' at position " + (state.position - 1));
         };
     }
 
@@ -436,47 +429,47 @@ public class Json {
         return objectify(parse(json), type);
     }
 
-    public static <T> T objectify(JsonValue value, Class<? extends T> type) {
+    public static <T> T objectify(JsonValue jsonValue, Class<? extends T> type) {
         if (type == null) {
             throw new NullPointerException("Type cannot be null");
         }
-        if (value == null) {
+        if (jsonValue == null) {
             throw new NullPointerException("Value cannot be null");
         }
-        if (value.isNull()) {
+        if (jsonValue.isNull()) {
             return null;
         }
         if (type == String.class) {
-            if (!value.isString()) {
-                throw new JsonObjectifyException("Trying to get a string from " + value.getClass().getSimpleName());
+            if (!jsonValue.isString()) {
+                throw new JsonObjectifyException("Trying to get a string from " + jsonValue.getClass().getSimpleName());
             }
             //noinspection unchecked
-            return (T) value.asString().getString();
+            return (T) jsonValue.asString().getString();
         }
         if (type == boolean.class || type == Boolean.class) {
-            if (!value.isBoolean()) {
-                throw new JsonObjectifyException("Trying to get boolean value from " + value.getClass().getSimpleName());
+            if (!jsonValue.isBoolean()) {
+                throw new JsonObjectifyException("Trying to get boolean value from " + jsonValue.getClass().getSimpleName());
             }
             //noinspection unchecked
-            return (T) value.asBoolean().getBoolean();
+            return (T) jsonValue.asBoolean().getBoolean();
         }
         if (Number.class.isAssignableFrom(type) || type == int.class || type == float.class || type == double.class || type == long.class) {
-            return convertNumber(value, type);
+            return convertNumber(jsonValue, type);
         }
         if (Temporal.class.isAssignableFrom(type)) {
-            return convertTemporal(value, type);
+            return convertTemporal(jsonValue, type);
         }
         if (type.isRecord()) {
-            return convertRecord(value, type);
+            return convertRecord(jsonValue, type);
         }
-        return convertObject(value, type);
+        return convertObject(jsonValue, type);
     }
 
-    private static <T> T convertRecord(JsonValue value, Class<? extends T> type) {
-        if (!value.isObject()) {
-            throw new JsonObjectifyException("Cannot create record of type " + type.getName() + " from " + value.getClass().getName() + " instead of JsonObject");
+    private static <T> T convertRecord(JsonValue jsonValue, Class<? extends T> type) {
+        if (!jsonValue.isObject()) {
+            throw new JsonObjectifyException("Cannot create record of type " + type.getName() + " from " + jsonValue.getClass().getName() + " instead of JsonObject");
         }
-        JsonObject object = value.asObject();
+        JsonObject object = jsonValue.asObject();
         RecordComponent[] recordComponents = type.getRecordComponents();
         Object[] constructorParameters = new Object[recordComponents.length];
         Class<?>[] constructorTypes = new Class<?>[recordComponents.length];
@@ -484,12 +477,8 @@ public class Json {
             RecordComponent recordComponent = recordComponents[i];
             Class<?> recordComponentType = recordComponent.getType();
             constructorTypes[i] = recordComponentType;
-            JsonValue constructorParameterValue = object.get(recordComponent.getName());
-            if (constructorParameterValue != null) {
-                constructorParameters[i] = Json.objectify(constructorParameterValue, recordComponentType);
-            } else {
-                constructorParameters[i] = getDefaultValueForType(recordComponentType);
-            }
+            JsonValue constructorParameterValue = object.getOrDefault(recordComponent.getName(), JsonNull.NULL);
+            constructorParameters[i] = convertFromValue(constructorParameterValue, recordComponentType, () -> (ParameterizedType) recordComponent.getGenericType());
         }
         try {
             Constructor<? extends T> declaredConstructor = type.getDeclaredConstructor(constructorTypes);
@@ -500,9 +489,9 @@ public class Json {
         }
     }
 
-    private static <T> T convertObject(JsonValue value, Class<? extends T> type) {
-        if (!value.isObject()) {
-            throw new JsonObjectifyException("Cannot create object of type " + type.getName() + " from " + value.getClass().getName() + " instead of JsonObject");
+    private static <T> T convertObject(JsonValue jsonValue, Class<? extends T> type) {
+        if (!jsonValue.isObject()) {
+            throw new JsonObjectifyException("Cannot create object of type " + type.getName() + " from " + jsonValue.getClass().getName() + " instead of JsonObject");
         }
         int numberOfConstructorParameters = Integer.MAX_VALUE;
         Constructor<?> selectedConstructor = null;
@@ -532,42 +521,64 @@ public class Json {
                 continue;
             }
             String name = field.getName();
-            JsonValue jsonValue = value.asObject().getOrDefault(name, JsonNull.NULL);
+            JsonValue value = jsonValue.asObject().getOrDefault(name, JsonNull.NULL);
             Class<?> fieldType = field.getType();
-            if (Optional.class.isAssignableFrom(fieldType)) {
-                Type[] typeArguments = ((ParameterizedType) field.getGenericType()).getActualTypeArguments();
-                try {
-                    field.set(instance, Optional.ofNullable(objectify(jsonValue, (Class<?>) typeArguments[0])));
-                } catch (IllegalAccessException e) {
-                    throw new JsonObjectifyException("Failed to set the field named " + field.getName() + " in " + type.getName(), e);
-                }
-            } else if (List.class.isAssignableFrom(fieldType)) {
-                Type[] typeArguments = ((ParameterizedType) field.getGenericType()).getActualTypeArguments();
-                try {
-                    field.set(instance, objectifyList(jsonValue, (Class<?>) typeArguments[0]));
-                } catch (IllegalAccessException e) {
-                    throw new JsonObjectifyException("Failed to set the field named " + field.getName() + " in " + type.getName(), e);
-                }
-            } else if (Map.class.isAssignableFrom(fieldType)) {
-                Type[] typeArguments = ((ParameterizedType) field.getGenericType()).getActualTypeArguments();
-                if (typeArguments[0] != String.class) {
-                    throw new JsonObjectifyException("Encountered map named " + field.getName() + " in " + type.getName() + " with non string key");
-                }
-                try {
-                    field.set(instance, typeArguments[1] instanceof ParameterizedType ? objectifyMap(jsonValue, (ParameterizedType) typeArguments[1]) : objectifyMap(jsonValue, (Class<?>) typeArguments[1]));
-                } catch (IllegalAccessException e) {
-                    throw new JsonObjectifyException("Failed to set the field named " + field.getName() + " in " + type.getName(), e);
-                }
-            } else {
-                try {
-                    field.set(instance, objectify(jsonValue, fieldType));
-                } catch (IllegalAccessException e) {
-                    throw new JsonObjectifyException("Failed to set the field named " + field.getName() + " in " + type.getName(), e);
-                }
+            try {
+                field.set(instance, convertFromValue(value, fieldType, () -> (ParameterizedType) field.getGenericType()));
+            } catch (IllegalAccessException e) {
+                throw new JsonObjectifyException("Failed to set the field named " + field.getName() + " in " + type.getName(), e);
             }
         }
         //noinspection unchecked
         return (T) instance;
+    }
+
+    private static Object convertFromValue(JsonValue jsonValue, Class<?> type, Supplier<ParameterizedType> parameterizedTypeSupplier) {
+        if (JsonNull.NULL == jsonValue) {
+            if (Optional.class.isAssignableFrom(type)) {
+                return Optional.empty();
+            }
+            return getDefaultValueForType(type);
+        }
+        if (Optional.class.isAssignableFrom(type)) {
+            Type typeArgument = parameterizedTypeSupplier.get().getActualTypeArguments()[0];
+            if (typeArgument instanceof ParameterizedType) {
+                return Optional.ofNullable(convertFromValue(jsonValue, (Class<?>) ((ParameterizedType) typeArgument).getRawType(), () -> (ParameterizedType) typeArgument));
+            } else {
+                return Optional.ofNullable(objectify(jsonValue, (Class<?>) typeArgument));
+            }
+        } else if (List.class.isAssignableFrom(type)) {
+            Type typeArgument = parameterizedTypeSupplier.get().getActualTypeArguments()[0];
+            if (typeArgument instanceof ParameterizedType) {
+                return objectifyList(jsonValue, (ParameterizedType) typeArgument);
+            } else {
+                return objectifyList(jsonValue, (Class<?>) typeArgument);
+            }
+        } else if (Set.class.isAssignableFrom(type)) {
+            Type typeArgument = parameterizedTypeSupplier.get().getActualTypeArguments()[0];
+            if (typeArgument instanceof ParameterizedType) {
+                return objectifySet(jsonValue, (ParameterizedType) typeArgument);
+            } else {
+                return objectifySet(jsonValue, (Class<?>) typeArgument);
+            }
+        } else if (Map.class.isAssignableFrom(type)) {
+            Type[] typeArguments = parameterizedTypeSupplier.get().getActualTypeArguments();
+            if (typeArguments[0] instanceof ParameterizedType) {
+                if (typeArguments[1] instanceof ParameterizedType) {
+                    return Json.objectifyMap(jsonValue, (ParameterizedType) typeArguments[0], (ParameterizedType) typeArguments[1]);
+                } else {
+                    return Json.objectifyMap(jsonValue, (ParameterizedType) typeArguments[0], (Class<?>) typeArguments[1]);
+                }
+            } else {
+                if (typeArguments[1] instanceof ParameterizedType) {
+                    return Json.objectifyMap(jsonValue, (Class<?>) typeArguments[0], (ParameterizedType) typeArguments[1]);
+                } else {
+                    return Json.objectifyMap(jsonValue, (Class<?>) typeArguments[0], (Class<?>) typeArguments[1]);
+                }
+            }
+        } else {
+            return objectify(jsonValue, type);
+        }
     }
 
     private static Object getDefaultValueForType(Class<?> type) {
@@ -660,6 +671,28 @@ public class Json {
         throw new JsonObjectifyException("Do not have an implementation that converts a number to " + type.getName());
     }
 
+    public static <T> Set<T> objectifySet(String json, Class<? extends T> type) {
+        return objectifySet(parse(json), type);
+    }
+
+    public static <T> Set<T> objectifySet(JsonValue jsonValue, Class<? extends T> type) {
+        if (!jsonValue.isArray()) {
+            throw new JsonObjectifyException("Supplied value was not an array");
+        }
+        return jsonValue.asArray().stream().map(value -> objectify(value, type)).collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    private static <T> Set<T> objectifySet(JsonValue jsonValue, ParameterizedType type) {
+        if (!jsonValue.isArray()) {
+            throw new JsonObjectifyException("Supplied value was not an array");
+        }
+        assertAllowedType(type);
+        Class<?> rawType = (Class<?>) type.getRawType();
+        Supplier<ParameterizedType> parameterizedTypeSupplier = () -> type;
+        //noinspection unchecked
+        return (Set<T>) jsonValue.asArray().stream().map(value -> convertFromValue(value, rawType, parameterizedTypeSupplier)).collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
     public static <T> List<T> objectifyList(String json, Class<? extends T> type) {
         return objectifyList(parse(json), type);
     }
@@ -671,19 +704,15 @@ public class Json {
         return value.asArray().stream().map(v -> objectify(v, type)).collect(Collectors.toList());
     }
 
-    private static <T> List<T> objectifyList(JsonValue value, ParameterizedType type) {
-        if (!value.isArray()) {
+    private static <T> List<T> objectifyList(JsonValue jsonValue, ParameterizedType type) {
+        if (!jsonValue.isArray()) {
             throw new JsonObjectifyException("Supplied value was not an array");
         }
-        boolean isList = ensureListOrMap(type);
-        Type subType = type.getActualTypeArguments()[isList ? 0 : 1];
-        if (isList) {
-            //noinspection unchecked
-            return value.asArray().stream().map(v -> subType instanceof ParameterizedType ? (T) objectifyList(v, (ParameterizedType) subType) : (T) objectifyList(v, (Class<?>) subType)).collect(Collectors.toList());
-        } else {
-            //noinspection unchecked
-            return value.asArray().stream().map(v -> subType instanceof ParameterizedType ? (T) objectifyMap(v, (ParameterizedType) subType) : (T) objectifyMap(v, (Class<?>) subType)).collect(Collectors.toList());
-        }
+        assertAllowedType(type);
+        Class<?> rawType = (Class<?>) type.getRawType();
+        Supplier<ParameterizedType> parameterizedTypeSupplier = () -> type;
+        //noinspection unchecked
+        return (List<T>) jsonValue.asArray().stream().map(value -> convertFromValue(value, rawType, parameterizedTypeSupplier)).toList();
     }
 
     public static <V> Map<String, V> objectifyMap(String json, Class<? extends V> valueType) {
@@ -694,54 +723,100 @@ public class Json {
         return objectifyMap(parse(json), keyType, valueType);
     }
 
-    public static <V> Map<String, V> objectifyMap(JsonValue value, Class<? extends V> valueType) {
-        return objectifyMap(value, String.class, valueType);
+    public static <V> Map<String, V> objectifyMap(JsonValue jsonValue, Class<? extends V> valueType) {
+        return objectifyMap(jsonValue, String.class, valueType);
     }
 
-    public static <K, V> Map<K, V> objectifyMap(JsonValue value, Class<? extends K> keyType, Class<? extends V> valueType) {
-        if (!value.isObject()) {
+    public static <K, V> Map<K, V> objectifyMap(JsonValue jsonValue, Class<? extends K> keyType, Class<? extends V> valueType) {
+        if (!jsonValue.isObject()) {
             throw new JsonObjectifyException("Supplied value is not an object");
         }
         Map<K, V> result = new LinkedHashMap<>();
-        for (Map.Entry<String, JsonValue> entry : value.asObject().entrySet()) {
-            K key;
+        jsonValue.asObject().forEach((key, value) -> {
+            K keyObject;
             if (keyType == String.class) {
                 //noinspection unchecked
-                key = (K) entry.getKey();
+                keyObject = (K) key;
             } else {
-                key = objectify(entry.getKey(), keyType);
+                keyObject = objectify(parse(key), keyType);
             }
-            result.put(key, objectify(entry.getValue(), valueType));
-        }
+            result.put(keyObject, objectify(value, valueType));
+        });
         return result;
     }
 
-    private static <V> Map<String, V> objectifyMap(JsonValue value, ParameterizedType type) {
-        if (!value.isObject()) {
+    private static <K, V> Map<K, V> objectifyMap(JsonValue jsonValue, ParameterizedType keyType, ParameterizedType valueType) {
+        if (!jsonValue.isObject()) {
             throw new JsonObjectifyException("Supplied value is not an object");
         }
-        boolean isList = ensureListOrMap(type);
-        Type subType = type.getActualTypeArguments()[isList ? 0 : 1];
-        Map<String, V> result = new LinkedHashMap<>();
-        for (Map.Entry<String, JsonValue> entry : value.asObject().entrySet()) {
-            if (isList) {
-                //noinspection unchecked
-                result.put(entry.getKey(), subType instanceof ParameterizedType ? (V) objectifyList(entry.getValue(), (ParameterizedType) subType) : (V) objectifyList(entry.getValue(), (Class<?>) subType));
-            } else {
-                //noinspection unchecked
-                result.put(entry.getKey(), subType instanceof ParameterizedType ? (V) objectifyMap(entry.getValue(), (ParameterizedType) subType) : (V) objectifyMap(entry.getValue(), (Class<?>) subType));
-            }
-        }
+        assertAllowedType(keyType);
+        assertAllowedType(valueType);
+        Map<K, V> result = new LinkedHashMap<>();
+        Class<?> rawKeyType = (Class<?>) keyType.getRawType();
+        Class<?> rawValueType = (Class<?>) valueType.getRawType();
+        Supplier<ParameterizedType> parameterizedKeyTypeSupplier = () -> keyType;
+        Supplier<ParameterizedType> parameterizedValueTypeSupplier = () -> valueType;
+        jsonValue.asObject().forEach((key, value) -> {
+            //noinspection unchecked
+            result.put(
+                    (K) convertFromValue(parse(key), rawKeyType, parameterizedKeyTypeSupplier),
+                    (V) convertFromValue(value, rawValueType, parameterizedValueTypeSupplier)
+            );
+        });
         return result;
     }
 
-    private static boolean ensureListOrMap(ParameterizedType type) {
-        Type rawType = type.getRawType();
-        boolean isList = List.class.isAssignableFrom((Class<?>) rawType);
-        boolean isMap = Map.class.isAssignableFrom((Class<?>) rawType);
-        if (!isList && !isMap) {
-            throw new JsonObjectifyException("Only generic classes accepted are lists and maps");
+    private static <K, V> Map<K, V> objectifyMap(JsonValue jsonValue, Class<? extends K> keyType, ParameterizedType valueType) {
+        if (!jsonValue.isObject()) {
+            throw new JsonObjectifyException("Supplied value is not an object");
         }
-        return isList;
+        assertAllowedType(valueType);
+        Map<K, V> result = new LinkedHashMap<>();
+        Class<?> rawValueType = (Class<?>) valueType.getRawType();
+        Supplier<ParameterizedType> parameterizedValueTypeSupplier = () -> valueType;
+        jsonValue.asObject().forEach((key, value) -> {
+            K keyObject;
+            if (keyType == String.class) {
+                //noinspection unchecked
+                keyObject = (K) key;
+            } else {
+                keyObject = objectify(parse(key), keyType);
+            }
+            //noinspection unchecked
+            result.put(
+                    keyObject,
+                    (V) convertFromValue(value, rawValueType, parameterizedValueTypeSupplier)
+            );
+        });
+        return result;
+    }
+
+    private static <K, V> Map<K, V> objectifyMap(JsonValue jsonValue, ParameterizedType keyType, Class<? extends V> valueType) {
+        if (!jsonValue.isObject()) {
+            throw new JsonObjectifyException("Supplied value is not an object");
+        }
+        assertAllowedType(keyType);
+        Map<K, V> result = new LinkedHashMap<>();
+        Class<?> rawKeyType = (Class<?>) keyType.getRawType();
+        Supplier<ParameterizedType> parameterizedKeyTypeSupplier = () -> keyType;
+        jsonValue.asObject().forEach((key, value) -> {
+            //noinspection unchecked
+            result.put(
+                    (K) convertFromValue(parse(key), rawKeyType, parameterizedKeyTypeSupplier),
+                    objectify(value, valueType)
+            );
+        });
+        return result;
+    }
+
+    private static void assertAllowedType(ParameterizedType type) {
+        Type rawType = type.getRawType();
+        if (!List.class.isAssignableFrom((Class<?>) rawType) &&
+                !Map.class.isAssignableFrom((Class<?>) rawType) &&
+                !Set.class.isAssignableFrom((Class<?>) rawType) &&
+                !Optional.class.isAssignableFrom((Class<?>) rawType)
+        ) {
+            throw new JsonObjectifyException("The only generic classes accepted are lists, maps, sets, and optionals");
+        }
     }
 }

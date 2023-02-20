@@ -14,10 +14,7 @@ import java.time.Year;
 import java.time.YearMonth;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -289,7 +286,9 @@ public class JsonTest {
         assertEquals(BigDecimal.ONE, Json.objectify("1", BigDecimal.class));
         assertEquals(BigInteger.ONE, Json.objectify("1", BigInteger.class));
         assertEquals(List.of("hello", "world"), Json.objectifyList("[\"hello\",\"world\"]", String.class));
+        assertEquals(Set.of("hello", "world"), Json.objectifySet("[\"hello\",\"world\"]", String.class));
         assertEquals(Map.of("hello", "world"), Json.objectifyMap("{\"hello\":\"world\"}", String.class));
+        assertEquals(Map.of("hello", "world"), Json.objectifyMap(Json.parse("{\"hello\":\"world\"}"), String.class));
         assertEquals(Map.of(new KeyObject("hello", 0), "world"), Json.objectifyMap("{\"{\\\"name\\\":\\\"hello\\\",\\\"value\\\":0}\":\"world\"}", KeyObject.class, String.class));
     }
 
@@ -315,7 +314,7 @@ public class JsonTest {
 
     @Test
     public void shouldObjectifyOtherObjects() {
-        TestSubObject tso = new TestSubObject(List.of("hello", "world"), Map.of("a", List.of("A", "1"), "b", List.of("B", "2")));
+        TestSubObject tso = new TestSubObject(List.of("hello", "world"), Map.of("a", List.of("A", "1"), "b", List.of("B", "2")), Set.of("c"));
         TestObject testObject = new TestObject("String", 5, 7L, Optional.of(BigDecimal.TEN), tso);
         String stringify = Json.stringify(testObject);
         System.out.println("stringify = " + stringify);
@@ -358,9 +357,12 @@ public class JsonTest {
         public final List<String> a;
         public final Map<String, List<String>> b;
 
-        private TestSubObject(List<String> a, Map<String, List<String>> b) {
+        public final Set<String> c;
+
+        private TestSubObject(List<String> a, Map<String, List<String>> b, Set<String> c) {
             this.a = a;
             this.b = b;
+            this.c = c;
         }
 
         @Override
@@ -368,12 +370,12 @@ public class JsonTest {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             TestSubObject that = (TestSubObject) o;
-            return Objects.equals(a, that.a) && Objects.equals(b, that.b);
+            return Objects.equals(a, that.a) && Objects.equals(b, that.b) && Objects.equals(c, that.c);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(a, b);
+            return Objects.hash(a, b, c);
         }
     }
 
@@ -400,6 +402,7 @@ public class JsonTest {
     public void shouldHandleComplexMapKeys() {
         ComplexMapKeyContainer input = new ComplexMapKeyContainer(Map.of(new KeyObject("Hello", 2), new ValueObject("World", 42)));
         String json = Json.stringify(input);
+        System.out.println("json = " + json);
         ComplexMapKeyContainer parsed = Json.objectify(json, ComplexMapKeyContainer.class);
         assertEquals(input, parsed);
     }
@@ -413,4 +416,30 @@ public class JsonTest {
         }
     }
     private record ValueObject(String value, int priority) {}
+
+    @Test
+    public void shouldHandleVeryComplexGenericStructure() {
+        VeryComplexStructureContainer input = new VeryComplexStructureContainer(
+                Map.of("root", List.of(Optional.empty(), Optional.of(Set.of(Map.of("deep", Set.of(List.of(Map.of("key", Optional.of("value"), "none", Optional.empty()))))))))
+        );
+        String json = Json.stringify(input);
+        VeryComplexStructureContainer objectified = Json.objectify(json, VeryComplexStructureContainer.class);
+        assertEquals(input, objectified);
+    }
+
+    private record VeryComplexStructureContainer(Map<String, List<Optional<Set<Map<String, Set<List<Map<String, Optional<String>>>>>>>>> values) {}
+
+    @Test
+    public void shouldHandleSimpleInternalStructure() {
+        SimpleMapContainer input = new SimpleMapContainer(Map.of("hello", "world"), Set.of("hello", "world"), List.of("hello", "world"));
+        String json = Json.stringify(input);
+        SimpleMapContainer objectified = Json.objectify(json, SimpleMapContainer.class);
+        assertEquals(input, objectified);
+    }
+
+    private record SimpleMapContainer(Map<String, String> a, Set<String> b, List<String> c) {}
+
+    @Test
+    public void testTheMultipleLevelsOfAll() {
+    }
 }
