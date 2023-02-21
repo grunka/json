@@ -2,9 +2,16 @@ package com.grunka.json.type;
 
 import java.util.Objects;
 
+/**
+ * Representation of a JSON string value
+ */
 public class JsonString extends JsonValue {
     private final String value;
 
+    /**
+     * Constructs a {@link JsonString} containing the supplied string value
+     * @param value the string value
+     */
     public JsonString(String value) {
         this.value = Objects.requireNonNull(value, "Value cannot be null");
     }
@@ -44,6 +51,10 @@ public class JsonString extends JsonValue {
         return true;
     }
 
+    /**
+     * Gets the decoded string value
+     * @return the decoded string value in the {@link JsonString}
+     */
     public String getString() {
         return value;
     }

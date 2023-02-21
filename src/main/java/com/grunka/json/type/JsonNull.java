@@ -1,6 +1,12 @@
 package com.grunka.json.type;
 
+/**
+ * Representation of a JSON null value
+ */
 public class JsonNull extends JsonValue {
+    /**
+     * The only instance for the 'null' value
+     */
     public static final JsonNull NULL = new JsonNull();
 
     private JsonNull() {

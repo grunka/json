@@ -9,8 +9,26 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Objects;
 
+/**
+ * Representation of a JSON array
+ */
 public class JsonArray extends JsonValue implements List<JsonValue> {
-    private final List<JsonValue> values = new ArrayList<>();
+    private final List<JsonValue> values;
+
+    /**
+     * Constructs an empty JSON array
+     */
+    public JsonArray() {
+        this(new ArrayList<>());
+    }
+
+    /**
+     * Constructs a JSON array with the supplied values
+     * @param values list of JSON values
+     */
+    public JsonArray(List<JsonValue> values) {
+        this.values = values;
+    }
 
     @Override
     public String toString() {

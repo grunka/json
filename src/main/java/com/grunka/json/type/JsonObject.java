@@ -8,13 +8,23 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+/**
+ * Representation of a JSON object
+ */
 public class JsonObject extends JsonValue implements Map<String, JsonValue> {
     private final LinkedHashMap<String, JsonValue> values;
 
+    /**
+     * Constructs an empty {@link JsonObject}
+     */
     public JsonObject() {
         this(new LinkedHashMap<>());
     }
 
+    /**
+     * Constructs a {@link JsonObject} containing the values in the supplied map
+     * @param values a populated map of values
+     */
     public JsonObject(LinkedHashMap<String, JsonValue> values) {
         this.values = values;
     }

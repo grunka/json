@@ -2,8 +2,17 @@ package com.grunka.json.type;
 
 import java.util.Objects;
 
+/**
+ * Representation of a JSON boolean value
+ */
 public class JsonBoolean extends JsonValue {
+    /**
+     * The only instance for the 'true' boolean value
+     */
     public static final JsonBoolean TRUE = new JsonBoolean(true);
+    /**
+     * The only instance for the 'false' boolean value
+     */
     public static final JsonBoolean FALSE = new JsonBoolean(false);
     private final boolean value;
 
@@ -11,6 +20,10 @@ public class JsonBoolean extends JsonValue {
         this.value = value;
     }
 
+    /**
+     * Gets the value of the {@link JsonBoolean}
+     * @return true if true
+     */
     public boolean isTrue() {
         return value;
     }
@@ -47,6 +60,10 @@ public class JsonBoolean extends JsonValue {
         return value ? "true" : "false";
     }
 
+    /**
+     * Gets the value of the {@link JsonBoolean} as an {@link Object}
+     * @return true if true
+     */
     public Boolean getBoolean() {
         return value;
     }

@@ -4,9 +4,16 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Objects;
 
+/**
+ * Representation of a JSON number value
+ */
 public class JsonNumber extends JsonValue implements Comparable<JsonNumber> {
     private final String number;
 
+    /**
+     * Constructs a {@link JsonNumber} instance from almost any number type
+     * @param number the value as a number
+     */
     public JsonNumber(Number number) {
         Objects.requireNonNull(number, "Value cannot be null");
         if (number instanceof BigDecimal) {
@@ -24,6 +31,10 @@ public class JsonNumber extends JsonValue implements Comparable<JsonNumber> {
         }
     }
 
+    /**
+     * Constructs a JsonNumber from a string
+     * @param number the value as a string
+     */
     public JsonNumber(String number) {
         Objects.requireNonNull(number, "Value cannot be null");
         this.number = number;
@@ -34,6 +45,10 @@ public class JsonNumber extends JsonValue implements Comparable<JsonNumber> {
         return true;
     }
 
+    /**
+     * Gets the number value
+     * @return the value as a {@link BigDecimal}
+     */
     public BigDecimal getBigDecimal() {
         return new BigDecimal(number);
     }
