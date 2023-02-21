@@ -7,6 +7,7 @@
     <groupId>com.grunka.json</groupId>
     <artifactId>json</artifactId>
     <version>1.2</version>
+    <name>json</name>
     <description>A very simple JSON parsing and stringifying library with defaults that I like</description>
     <url>https://github.com/grunka/json</url>
     <licenses>
@@ -51,6 +52,19 @@
                         <id>attach-sources</id>
                         <goals>
                             <goal>jar-no-fork</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>3.5.0</version>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
                         </goals>
                     </execution>
                 </executions>
