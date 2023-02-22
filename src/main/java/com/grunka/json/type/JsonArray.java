@@ -24,6 +24,7 @@ public class JsonArray implements JsonValue, List<JsonValue> {
 
     /**
      * Constructs a JSON array with the supplied values
+     *
      * @param values list of JSON values
      */
     public JsonArray(List<JsonValue> values) {

@@ -6,6 +6,7 @@ package com.grunka.json;
 public class JsonParseException extends RuntimeException {
     /**
      * Constructs an exception with a message
+     *
      * @param message the exception message
      */
     public JsonParseException(String message) {
@@ -14,8 +15,9 @@ public class JsonParseException extends RuntimeException {
 
     /**
      * Constructs an exception with a message and a cause
+     *
      * @param message the exception message
-     * @param cause the exception cause
+     * @param cause   the exception cause
      */
     public JsonParseException(String message, Throwable cause) {
         super(message, cause);

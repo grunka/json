@@ -12,6 +12,7 @@ public class JsonNumber extends Number implements JsonValue, Comparable<JsonNumb
 
     /**
      * Constructs a {@link JsonNumber} instance from almost any number type
+     *
      * @param number the value as a number
      */
     public JsonNumber(Number number) {
@@ -33,6 +34,7 @@ public class JsonNumber extends Number implements JsonValue, Comparable<JsonNumb
 
     /**
      * Constructs a JsonNumber from a string
+     *
      * @param number the value as a string
      */
     public JsonNumber(String number) {
@@ -47,6 +49,7 @@ public class JsonNumber extends Number implements JsonValue, Comparable<JsonNumb
 
     /**
      * Gets the number value
+     *
      * @return the value as a {@link BigDecimal}
      */
     public BigDecimal getBigDecimal() {

@@ -22,6 +22,7 @@ public class JsonBoolean implements JsonValue, Comparable<JsonBoolean> {
 
     /**
      * Gets the value of the {@link JsonBoolean}
+     *
      * @return true if true
      */
     public boolean isTrue() {
@@ -62,6 +63,7 @@ public class JsonBoolean implements JsonValue, Comparable<JsonBoolean> {
 
     /**
      * Gets the value of the {@link JsonBoolean} as an {@link Object}
+     *
      * @return true if true
      */
     public Boolean getBoolean() {

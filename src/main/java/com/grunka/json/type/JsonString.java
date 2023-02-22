@@ -10,6 +10,7 @@ public class JsonString implements JsonValue, CharSequence, Comparable<JsonStrin
 
     /**
      * Constructs a {@link JsonString} containing the supplied string value
+     *
      * @param value the string value
      */
     public JsonString(String value) {
@@ -68,6 +69,7 @@ public class JsonString implements JsonValue, CharSequence, Comparable<JsonStrin
 
     /**
      * Gets the decoded string value
+     *
      * @return the decoded string value in the {@link JsonString}
      */
     public String getString() {

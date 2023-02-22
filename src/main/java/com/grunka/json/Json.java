@@ -86,6 +86,7 @@ public class Json {
 
     /**
      * Parses a string into a {@link JsonValue}
+     *
      * @param json a JSON string
      * @return the parsed object
      * @throws JsonParseException if the parsing fails
@@ -296,6 +297,7 @@ public class Json {
 
     /**
      * Converts any object into its {@link JsonValue} representation
+     *
      * @param input any object
      * @return the {@link JsonValue} representation
      */
@@ -370,6 +372,7 @@ public class Json {
 
     /**
      * Converts an object into a JSON string
+     *
      * @param input any object
      * @return a JSON string
      * @throws JsonStringifyException if the stringify fails
@@ -447,10 +450,11 @@ public class Json {
 
     /**
      * Parses a JSON string and then tries to map the parsed {@link JsonValue} into an instance of the supplied type
+     *
      * @param json a JSON string
      * @param type the target type
+     * @param <T>  any type
      * @return a populated instance
-     * @param <T> any type
      * @throws JsonObjectifyException if the mapping fails
      */
     public static <T> T objectify(String json, Class<? extends T> type) {
@@ -459,10 +463,11 @@ public class Json {
 
     /**
      * Maps the values in a {@link JsonValue} instance into an instance of the supplied type
+     *
      * @param jsonValue a {@link JsonValue} containing the values to map
-     * @param type the target type
+     * @param type      the target type
+     * @param <T>       any type
      * @return a populated instance
-     * @param <T> any type
      * @throws JsonObjectifyException if the mapping fails
      */
     public static <T> T objectify(JsonValue jsonValue, Class<? extends T> type) {
@@ -709,10 +714,11 @@ public class Json {
 
     /**
      * Parses a JSON string and converts it into a {@link Set} with the supplied generic type. Returned {@link Set} is a {@link LinkedHashSet} to retain order of array.
+     *
      * @param json a string containing a JSON array
      * @param type the generic type for the {@link Set}
+     * @param <T>  any type
      * @return a {@link Set} containing all values
-     * @param <T> any type
      */
     public static <T> Set<T> objectifySet(String json, Class<? extends T> type) {
         return objectifySet(parse(json), type);
@@ -720,10 +726,11 @@ public class Json {
 
     /**
      * Takes a {@link JsonValue} and converts it into a {@link Set} with the supplied generic type. Returned {@link Set} is a {@link LinkedHashSet} to retain order of array.
+     *
      * @param jsonValue a {@link JsonValue} containing a JSON array
-     * @param type the generic type for the {@link Set}
+     * @param type      the generic type for the {@link Set}
+     * @param <T>       any type
      * @return a {@link Set} containing all values
-     * @param <T> any type
      */
     public static <T> Set<T> objectifySet(JsonValue jsonValue, Class<? extends T> type) {
         if (!jsonValue.isArray()) {
@@ -745,10 +752,11 @@ public class Json {
 
     /**
      * Parses a JSON string and converts it into a {@link List} with the supplied generic type. Returned {@link List} is a {@link ArrayList}.
+     *
      * @param json a string containing a JSON array
      * @param type the generic type for the {@link List}
+     * @param <T>  any type
      * @return a {@link List} containing all values
-     * @param <T> any type
      */
     public static <T> List<T> objectifyList(String json, Class<? extends T> type) {
         return objectifyList(parse(json), type);
@@ -756,10 +764,11 @@ public class Json {
 
     /**
      * Takes a {@link JsonValue} and converts it into a {@link List} with the supplied generic type. Returned {@link List} is a {@link ArrayList}.
+     *
      * @param jsonValue a {@link JsonValue} containing a JSON array
-     * @param type the generic type for the {@link List}
+     * @param type      the generic type for the {@link List}
+     * @param <T>       any type
      * @return a {@link List} containing all values
-     * @param <T> any type
      */
     public static <T> List<T> objectifyList(JsonValue jsonValue, Class<? extends T> type) {
         if (!jsonValue.isArray()) {
@@ -781,10 +790,11 @@ public class Json {
 
     /**
      * Parses a JSON string and converts it into a {@link Map} with string as the key type and the supplied generic type as value type. Returned {@link Map} is a {@link LinkedHashMap} to retain order of the object.
-     * @param json a string containing a JSON object
+     *
+     * @param json      a string containing a JSON object
      * @param valueType the generic type for the {@link Map}
+     * @param <V>       any type
      * @return a {@link Map} containing all values
-     * @param <V> any type
      */
     public static <V> Map<String, V> objectifyMap(String json, Class<? extends V> valueType) {
         return objectifyMap(parse(json), String.class, valueType);
@@ -792,12 +802,13 @@ public class Json {
 
     /**
      * Parses a JSON string and converts it into a {@link Map} with supplied key and value types. Returned {@link Map} is a {@link LinkedHashMap} to retain order of the object.
-     * @param json a string containing a JSON object
-     * @param keyType the generic type for the keys of the {@link Map}
+     *
+     * @param json      a string containing a JSON object
+     * @param keyType   the generic type for the keys of the {@link Map}
      * @param valueType the generic type for the values of the {@link Map}
+     * @param <K>       any type
+     * @param <V>       any type
      * @return a {@link Map} containing all values
-     * @param <K> any type
-     * @param <V> any type
      */
     public static <K, V> Map<K, V> objectifyMap(String json, Class<? extends K> keyType, Class<? extends V> valueType) {
         return objectifyMap(parse(json), keyType, valueType);
@@ -805,10 +816,11 @@ public class Json {
 
     /**
      * Takes a {@link JsonValue} and converts it into a {@link Map} with string as the key type and the supplied generic type as value type. Returned {@link Map} is a {@link LinkedHashMap} to retain order of the object.
+     *
      * @param jsonValue a {@link JsonValue} containing a JSON object
      * @param valueType the generic type for the {@link Map}
+     * @param <V>       any type
      * @return a {@link Map} containing all values
-     * @param <V> any type
      */
     public static <V> Map<String, V> objectifyMap(JsonValue jsonValue, Class<? extends V> valueType) {
         return objectifyMap(jsonValue, String.class, valueType);
@@ -816,12 +828,13 @@ public class Json {
 
     /**
      * Takes a {@link JsonValue} and converts it into a {@link Map} with supplied key and value types. Returned {@link Map} is a {@link LinkedHashMap} to retain order of the object.
+     *
      * @param jsonValue a {@link JsonValue} containing a JSON object
-     * @param keyType the generic type for the keys of the {@link Map}
+     * @param keyType   the generic type for the keys of the {@link Map}
      * @param valueType the generic type for the values of the {@link Map}
+     * @param <K>       any type
+     * @param <V>       any type
      * @return a {@link Map} containing all values
-     * @param <K> any type
-     * @param <V> any type
      */
     public static <K, V> Map<K, V> objectifyMap(JsonValue jsonValue, Class<? extends K> keyType, Class<? extends V> valueType) {
         if (!jsonValue.isObject()) {

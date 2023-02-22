@@ -23,6 +23,7 @@ public class JsonObject implements JsonValue, Map<String, JsonValue> {
 
     /**
      * Constructs a {@link JsonObject} containing the values in the supplied map
+     *
      * @param values a populated map of values
      */
     public JsonObject(LinkedHashMap<String, JsonValue> values) {
