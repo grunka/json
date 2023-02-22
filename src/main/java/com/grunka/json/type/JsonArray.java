@@ -13,13 +13,13 @@ import java.util.Objects;
  * Representation of a JSON array
  */
 public class JsonArray implements JsonValue, List<JsonValue> {
-    private final List<JsonValue> values;
+    private final ArrayList<JsonValue> values;
 
     /**
      * Constructs an empty JSON array
      */
     public JsonArray() {
-        this(new ArrayList<>());
+        this.values = new ArrayList<>();
     }
 
     /**
@@ -28,7 +28,7 @@ public class JsonArray implements JsonValue, List<JsonValue> {
      * @param values list of JSON values
      */
     public JsonArray(List<JsonValue> values) {
-        this.values = values;
+        this.values = new ArrayList<>(values);
     }
 
     @Override

@@ -18,7 +18,7 @@ public class JsonObject implements JsonValue, Map<String, JsonValue> {
      * Constructs an empty {@link JsonObject}
      */
     public JsonObject() {
-        this(new LinkedHashMap<>());
+        this.values = new LinkedHashMap<>();
     }
 
     /**
@@ -26,8 +26,8 @@ public class JsonObject implements JsonValue, Map<String, JsonValue> {
      *
      * @param values a populated map of values
      */
-    public JsonObject(LinkedHashMap<String, JsonValue> values) {
-        this.values = values;
+    public JsonObject(Map<String, JsonValue> values) {
+        this.values = new LinkedHashMap<>(values);
     }
 
     @Override
