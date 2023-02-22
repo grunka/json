@@ -477,6 +477,11 @@ public class Json {
         if (jsonValue == null) {
             throw new NullPointerException("Value cannot be null");
         }
+        if (JsonValue.class.isAssignableFrom(type)) {
+            ensureCastableJsonValue(jsonValue, type);
+            //noinspection unchecked
+            return (T) jsonValue;
+        }
         if (jsonValue.isNull()) {
             return null;
         }
@@ -575,6 +580,10 @@ public class Json {
     }
 
     private static Object convertFromValue(JsonValue jsonValue, Class<?> type, Supplier<ParameterizedType> parameterizedTypeSupplier) {
+        if (JsonValue.class.isAssignableFrom(type)) {
+            ensureCastableJsonValue(jsonValue, type);
+            return jsonValue;
+        }
         if (JsonNull.NULL == jsonValue) {
             if (Optional.class.isAssignableFrom(type)) {
                 return Optional.empty();
@@ -588,21 +597,24 @@ public class Json {
             } else {
                 return Optional.ofNullable(objectify(jsonValue, (Class<?>) typeArgument));
             }
-        } else if (List.class.isAssignableFrom(type)) {
+        }
+        if (List.class.isAssignableFrom(type)) {
             Type typeArgument = parameterizedTypeSupplier.get().getActualTypeArguments()[0];
             if (typeArgument instanceof ParameterizedType) {
                 return objectifyList(jsonValue, (ParameterizedType) typeArgument);
             } else {
                 return objectifyList(jsonValue, (Class<?>) typeArgument);
             }
-        } else if (Set.class.isAssignableFrom(type)) {
+        }
+        if (Set.class.isAssignableFrom(type)) {
             Type typeArgument = parameterizedTypeSupplier.get().getActualTypeArguments()[0];
             if (typeArgument instanceof ParameterizedType) {
                 return objectifySet(jsonValue, (ParameterizedType) typeArgument);
             } else {
                 return objectifySet(jsonValue, (Class<?>) typeArgument);
             }
-        } else if (Map.class.isAssignableFrom(type)) {
+        }
+        if (Map.class.isAssignableFrom(type)) {
             Type[] typeArguments = parameterizedTypeSupplier.get().getActualTypeArguments();
             if (typeArguments[0] instanceof ParameterizedType) {
                 if (typeArguments[1] instanceof ParameterizedType) {
@@ -617,8 +629,19 @@ public class Json {
                     return Json.objectifyMap(jsonValue, (Class<?>) typeArguments[0], (Class<?>) typeArguments[1]);
                 }
             }
-        } else {
-            return objectify(jsonValue, type);
+        }
+        return objectify(jsonValue, type);
+    }
+
+    private static void ensureCastableJsonValue(JsonValue jsonValue, Class<?> type) {
+        if (!jsonValue.isNull() && (
+                type == JsonArray.class && !jsonValue.isArray() ||
+                        type == JsonObject.class && !jsonValue.isObject() ||
+                        type == JsonBoolean.class && !jsonValue.isBoolean() ||
+                        type == JsonNumber.class && !jsonValue.isNumber() ||
+                        type == JsonString.class && !jsonValue.isString()
+        )) {
+            throw new JsonObjectifyException("Cannot map " + jsonValue.getClass().getSimpleName() + " to " + type.getSimpleName());
         }
     }
 

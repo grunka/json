@@ -1,6 +1,9 @@
 package com.grunka.json;
 
+import com.grunka.json.type.JsonArray;
+import com.grunka.json.type.JsonObject;
 import com.grunka.json.type.JsonString;
+import com.grunka.json.type.JsonValue;
 import org.junit.Test;
 
 import java.math.BigDecimal;
@@ -407,7 +410,8 @@ public class JsonTest {
         assertEquals(input, parsed);
     }
 
-    private record ComplexMapKeyContainer(Map<KeyObject, ValueObject> data) {}
+    private record ComplexMapKeyContainer(Map<KeyObject, ValueObject> data) {
+    }
 
     private record KeyObject(String name, int value) {
         @Override
@@ -415,7 +419,9 @@ public class JsonTest {
             throw new UnsupportedOperationException();
         }
     }
-    private record ValueObject(String value, int priority) {}
+
+    private record ValueObject(String value, int priority) {
+    }
 
     @Test
     public void shouldHandleVeryComplexGenericStructure() {
@@ -427,7 +433,8 @@ public class JsonTest {
         assertEquals(input, objectified);
     }
 
-    private record VeryComplexStructureContainer(Map<String, List<Optional<Set<Map<String, Set<List<Map<String, Optional<String>>>>>>>>> values) {}
+    private record VeryComplexStructureContainer(Map<String, List<Optional<Set<Map<String, Set<List<Map<String, Optional<String>>>>>>>>> values) {
+    }
 
     @Test
     public void shouldHandleSimpleInternalStructure() {
@@ -437,9 +444,31 @@ public class JsonTest {
         assertEquals(input, objectified);
     }
 
-    private record SimpleMapContainer(Map<String, String> a, Set<String> b, List<String> c) {}
+    private record SimpleMapContainer(Map<String, String> a, Set<String> b, List<String> c) {
+    }
 
     @Test
-    public void testTheMultipleLevelsOfAll() {
+    public void shouldObjectifyIntoTheDifferentJsonValueTypes() {
+        assertEquals(new JsonString("hello world"), Json.objectify(Json.stringify("hello world"), JsonString.class));
+        try {
+            Json.objectify(Json.stringify(Map.of("hello", "world")), JsonString.class);
+            fail("Expected exception");
+        } catch (JsonObjectifyException ignore) {
+        }
+
+        String json = Json.stringify(new ObjectContainingNormalValues("string", List.of("A", "B", "C"), Map.of("key", Map.of("subkey", "subvalue"))));
+        JsonValue parsed = Json.parse(json);
+        ObjectContainingJsonValues objectified = Json.objectify(parsed, ObjectContainingJsonValues.class);
+        assertEquals("string", objectified.s().getString());
+        assertEquals("A", objectified.a().get(0).asString().getString());
+        assertEquals("B", objectified.a().get(1).asString().getString());
+        assertEquals("C", objectified.a().get(2).asString().getString());
+        assertEquals(new JsonObject(Map.of("subkey", new JsonString("subvalue"))), objectified.m().get("key"));
+    }
+
+    private record ObjectContainingNormalValues(String s, List<String> a, Map<String, Map<String, String>> m) {
+    }
+
+    private record ObjectContainingJsonValues(JsonString s, JsonArray a, Map<String, JsonObject> m) {
     }
 }
