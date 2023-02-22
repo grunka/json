@@ -8,6 +8,9 @@ import java.util.Objects;
  * Representation of a JSON number value
  */
 public class JsonNumber extends Number implements JsonValue, Comparable<JsonNumber> {
+    /**
+     * Internal representation of the value of this JSON number
+     */
     private final String number;
 
     /**
