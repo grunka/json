@@ -7,7 +7,7 @@ import java.util.Objects;
 /**
  * Representation of a JSON number value
  */
-public class JsonNumber extends JsonValue implements Comparable<JsonNumber> {
+public class JsonNumber extends Number implements JsonValue, Comparable<JsonNumber> {
     private final String number;
 
     /**
@@ -65,7 +65,7 @@ public class JsonNumber extends JsonValue implements Comparable<JsonNumber> {
 
     @Override
     public int compareTo(JsonNumber o) {
-        return number.compareTo(o.number);
+        return getBigDecimal().compareTo(o.getBigDecimal());
     }
 
     @Override
@@ -79,5 +79,25 @@ public class JsonNumber extends JsonValue implements Comparable<JsonNumber> {
     @Override
     public int hashCode() {
         return Objects.hash(number);
+    }
+
+    @Override
+    public int intValue() {
+        return getBigDecimal().intValue();
+    }
+
+    @Override
+    public long longValue() {
+        return getBigDecimal().longValue();
+    }
+
+    @Override
+    public float floatValue() {
+        return getBigDecimal().floatValue();
+    }
+
+    @Override
+    public double doubleValue() {
+        return getBigDecimal().floatValue();
     }
 }

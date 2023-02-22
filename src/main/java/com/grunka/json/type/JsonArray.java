@@ -12,7 +12,7 @@ import java.util.Objects;
 /**
  * Representation of a JSON array
  */
-public class JsonArray extends JsonValue implements List<JsonValue> {
+public class JsonArray implements JsonValue, List<JsonValue> {
     private final List<JsonValue> values;
 
     /**

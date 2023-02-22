@@ -3,7 +3,7 @@ package com.grunka.json.type;
 /**
  * Representation of a JSON null value
  */
-public class JsonNull extends JsonValue {
+public class JsonNull implements JsonValue {
     /**
      * The only instance for the 'null' value
      */

@@ -5,7 +5,7 @@ import java.util.Objects;
 /**
  * Representation of a JSON boolean value
  */
-public class JsonBoolean extends JsonValue {
+public class JsonBoolean implements JsonValue, Comparable<JsonBoolean> {
     /**
      * The only instance for the 'true' boolean value
      */
@@ -66,5 +66,10 @@ public class JsonBoolean extends JsonValue {
      */
     public Boolean getBoolean() {
         return value;
+    }
+
+    @Override
+    public int compareTo(JsonBoolean o) {
+        return Boolean.compare(this.value, o.value);
     }
 }

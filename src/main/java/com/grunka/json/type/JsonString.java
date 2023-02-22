@@ -5,7 +5,7 @@ import java.util.Objects;
 /**
  * Representation of a JSON string value
  */
-public class JsonString extends JsonValue {
+public class JsonString implements JsonValue, CharSequence, Comparable<JsonString> {
     private final String value;
 
     /**
@@ -14,6 +14,21 @@ public class JsonString extends JsonValue {
      */
     public JsonString(String value) {
         this.value = Objects.requireNonNull(value, "Value cannot be null");
+    }
+
+    @Override
+    public int length() {
+        return value.length();
+    }
+
+    @Override
+    public char charAt(int index) {
+        return value.charAt(index);
+    }
+
+    @Override
+    public CharSequence subSequence(int start, int end) {
+        return value.subSequence(start, end);
     }
 
     @Override
@@ -79,5 +94,10 @@ public class JsonString extends JsonValue {
     @Override
     public int hashCode() {
         return Objects.hash(value);
+    }
+
+    @Override
+    public int compareTo(JsonString o) {
+        return this.value.compareTo(o.value);
     }
 }

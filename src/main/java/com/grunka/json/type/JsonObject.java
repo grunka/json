@@ -11,7 +11,7 @@ import java.util.Set;
 /**
  * Representation of a JSON object
  */
-public class JsonObject extends JsonValue implements Map<String, JsonValue> {
+public class JsonObject implements JsonValue, Map<String, JsonValue> {
     private final LinkedHashMap<String, JsonValue> values;
 
     /**
