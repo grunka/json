@@ -42,4 +42,4 @@ record HelloRecord(String hello){}
 HelloRecord who = Json.objectify("{\"hello\":\"world\"}", HelloRecord.class);
 ```
 
-And more, see methods `Json.objectifyMap`, `Json.objectifyList`, `Json.objectifySet`, and `Json.valuefy`.  
+And more, see methods `Json.objectifyMap`, `Json.objectifyList`, `Json.objectifySet`, `Json.valuefy`, and `Json.map`.
