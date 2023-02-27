@@ -133,7 +133,8 @@ public class Json {
             case ':' -> ":";
             case '"' -> "\"";
             case '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' -> readNumber(state, head);
-            default -> throw new JsonParseException("Unexpected character '" + head + "' at position " + (state.position - 1));
+            default ->
+                    throw new JsonParseException("Unexpected character '" + head + "' at position " + (state.position - 1));
         };
     }
 
@@ -530,7 +531,8 @@ public class Json {
             Constructor<? extends T> declaredConstructor = type.getDeclaredConstructor(constructorTypes);
             declaredConstructor.trySetAccessible();
             return declaredConstructor.newInstance(constructorParameters);
-        } catch (NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e) {
+        } catch (NoSuchMethodException | InstantiationException | IllegalAccessException |
+                 InvocationTargetException e) {
             throw new JsonObjectifyException("Could not construct record of type " + type.getName(), e);
         }
     }
@@ -949,6 +951,59 @@ public class Json {
                 !Optional.class.isAssignableFrom((Class<?>) rawType)
         ) {
             throw new JsonObjectifyException("The only generic classes accepted are lists, maps, sets, and optionals");
+        }
+    }
+
+    /**
+     * Iterates through a {@link JsonValue} and applies {@link JsonValueMapper}s to them. The mappers get a path passed to them along with the {@link JsonValue}, this path starts with a `.` representing the root element.
+     * A `[]` represents an array of elements. {@link JsonObject}s are iterated through by key name. So a path of `.entries[].value` would target a field called `value` inside an object in a list in the root object called `entries`.
+     * If a value is replaced, the replacement object is not processed.
+     *
+     * @param jsonValue                  The {@link JsonValue} that needs to be updated
+     * @param jsonValueMapper            A mapper that can convert a JSON value
+     * @param additionalJsonValueMappers Additional mappers if one isn't enough
+     * @return The updated {@link JsonValue}
+     */
+    public static JsonValue map(JsonValue jsonValue, JsonValueMapper jsonValueMapper, JsonValueMapper... additionalJsonValueMappers) {
+        List<JsonValueMapper> mappers = new ArrayList<>();
+        mappers.add(jsonValueMapper);
+        mappers.addAll(List.of(additionalJsonValueMappers));
+        return internalMap(jsonValue, ".", mappers);
+    }
+
+    private static JsonValue internalMap(JsonValue jsonValue, String path, List<JsonValueMapper> mappers) {
+        for (JsonValueMapper mapper : mappers) {
+            JsonValue mappedJsonValue = mapper.map(path, jsonValue);
+            if (!Objects.equals(mappedJsonValue, jsonValue)) {
+                return mappedJsonValue;
+            }
+        }
+        if (jsonValue.isArray()) {
+            path += "[]";
+            JsonArray updatedJsonArray = new JsonArray();
+            for (JsonValue value : jsonValue.asArray()) {
+                updatedJsonArray.add(internalMap(value, path, mappers));
+            }
+            if (Objects.equals(updatedJsonArray, jsonValue)) {
+                return jsonValue;
+            } else {
+                return updatedJsonArray;
+            }
+        } else if (jsonValue.isObject()) {
+            if (!path.endsWith(".")) {
+                path += ".";
+            }
+            JsonObject updatedJsonObject = new JsonObject();
+            for (Map.Entry<String, JsonValue> value : jsonValue.asObject().entrySet()) {
+                updatedJsonObject.put(value.getKey(), internalMap(value.getValue(), path + value.getKey(), mappers));
+            }
+            if (Objects.equals(updatedJsonObject, jsonValue)) {
+                return jsonValue;
+            } else {
+                return updatedJsonObject;
+            }
+        } else {
+            return jsonValue;
         }
     }
 }

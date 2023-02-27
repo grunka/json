@@ -1,9 +1,6 @@
 package com.grunka.json;
 
-import com.grunka.json.type.JsonArray;
-import com.grunka.json.type.JsonObject;
-import com.grunka.json.type.JsonString;
-import com.grunka.json.type.JsonValue;
+import com.grunka.json.type.*;
 import org.junit.Test;
 
 import java.math.BigDecimal;
@@ -19,11 +16,7 @@ import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 public class JsonTest {
     @Test
@@ -459,6 +452,7 @@ public class JsonTest {
         String json = Json.stringify(new ObjectContainingNormalValues("string", List.of("A", "B", "C"), Map.of("key", Map.of("subkey", "subvalue"))));
         JsonValue parsed = Json.parse(json);
         ObjectContainingJsonValues objectified = Json.objectify(parsed, ObjectContainingJsonValues.class);
+        assertNotNull(objectified);
         assertEquals("string", objectified.s().getString());
         assertEquals("A", objectified.a().get(0).asString().getString());
         assertEquals("B", objectified.a().get(1).asString().getString());
@@ -470,5 +464,20 @@ public class JsonTest {
     }
 
     private record ObjectContainingJsonValues(JsonString s, JsonArray a, Map<String, JsonObject> m) {
+    }
+
+    @Test
+    public void shouldMapJsonValueStructure() {
+        assertEquals(new JsonNumber(42), Json.map(new JsonString("hello world"), (path, jsonValue) -> ".".equals(path) ? new JsonNumber(42) : jsonValue));
+        JsonValue amountMapped = Json.map(new JsonObject(Map.of("amount", new JsonString("42.0"))), (path, jsonValue) -> ".amount".equals(path) ? new JsonNumber(jsonValue.asString().getString()) : jsonValue);
+        MappedStructure mappedStructure = Json.objectify(amountMapped, MappedStructure.class);
+        assertNotNull(mappedStructure);
+        assertEquals(new BigDecimal("42.0"), mappedStructure.amount());
+        JsonValue mappedListStructure = Json.map(new JsonArray(List.of(new JsonObject(Map.of("amount", new JsonString("123.123"))))), (path, jsonValue) -> ".[].amount".equals(path) ? new JsonNumber(jsonValue.asString().getString()) : jsonValue);
+        List<MappedStructure> mappedStructures = Json.objectifyList(mappedListStructure, MappedStructure.class);
+        assertEquals(List.of(new MappedStructure(new BigDecimal("123.123"))), mappedStructures);
+    }
+
+    private record MappedStructure(BigDecimal amount) {
     }
 }
