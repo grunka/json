@@ -133,8 +133,7 @@ public class Json {
             case ':' -> ":";
             case '"' -> "\"";
             case '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' -> readNumber(state, head);
-            default ->
-                    throw new JsonParseException("Unexpected character '" + head + "' at position " + (state.position - 1));
+            default -> throw new JsonParseException("Unexpected character '" + head + "' at position " + (state.position - 1));
         };
     }
 
@@ -955,20 +954,29 @@ public class Json {
     }
 
     /**
+     * Iterates through a {@link JsonValue} and applies the {@link JsonValueMapper} to them. The mapper gets a path passed to them along with the {@link JsonValue}, this path starts with a `.` representing the root element.
+     * A `[]` represents an array of elements. {@link JsonObject}s are iterated through by key name. So a path of `.entries[].value` would target a field called `value` inside an object in a list in the root object called `entries`.
+     * If a value is replaced, the replacement object is not processed.
+     *
+     * @param jsonValue       The {@link JsonValue} that needs to be updated
+     * @param jsonValueMapper A mapper that can convert a JSON value
+     * @return The updated {@link JsonValue}
+     */
+    public static JsonValue map(JsonValue jsonValue, JsonValueMapper jsonValueMapper) {
+        return map(jsonValue, List.of(jsonValueMapper));
+    }
+
+    /**
      * Iterates through a {@link JsonValue} and applies {@link JsonValueMapper}s to them. The mappers get a path passed to them along with the {@link JsonValue}, this path starts with a `.` representing the root element.
      * A `[]` represents an array of elements. {@link JsonObject}s are iterated through by key name. So a path of `.entries[].value` would target a field called `value` inside an object in a list in the root object called `entries`.
      * If a value is replaced, the replacement object is not processed.
      *
-     * @param jsonValue                  The {@link JsonValue} that needs to be updated
-     * @param jsonValueMapper            A mapper that can convert a JSON value
-     * @param additionalJsonValueMappers Additional mappers if one isn't enough
+     * @param jsonValue        The {@link JsonValue} that needs to be updated
+     * @param jsonValueMappers A list of mappers that can convert a JSON values
      * @return The updated {@link JsonValue}
      */
-    public static JsonValue map(JsonValue jsonValue, JsonValueMapper jsonValueMapper, JsonValueMapper... additionalJsonValueMappers) {
-        List<JsonValueMapper> mappers = new ArrayList<>();
-        mappers.add(jsonValueMapper);
-        mappers.addAll(List.of(additionalJsonValueMappers));
-        return internalMap(jsonValue, ".", mappers);
+    public static JsonValue map(JsonValue jsonValue, List<JsonValueMapper> jsonValueMappers) {
+        return internalMap(jsonValue, ".", jsonValueMappers);
     }
 
     private static JsonValue internalMap(JsonValue jsonValue, String path, List<JsonValueMapper> mappers) {
