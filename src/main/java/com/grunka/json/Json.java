@@ -379,7 +379,7 @@ public class Json {
      * @throws JsonStringifyException if the stringify fails
      */
     public static String stringify(Object input) {
-        return stringify(input, false);
+        return stringify(input, false, 0);
     }
 
     /**
@@ -390,7 +390,7 @@ public class Json {
      * @throws JsonStringifyException if the stringify fails
      */
     public static String prettyStringify(Object input) {
-        return stringify(input, true);
+        return stringify(input, true, 0);
     }
 
     private static class Indent {
@@ -398,8 +398,9 @@ public class Json {
         private String[] indents = new String[5];
         private int level = 0;
 
-        public Indent(String unit) {
+        public Indent(String unit, int level) {
             this.unit = unit;
+            this.level = level;
         }
 
         public void longer() {
@@ -419,21 +420,22 @@ public class Json {
             }
             return indents[level];
         }
+
+        public int level() {
+            return level;
+        }
     }
 
-    private static String stringify(final Object input, final boolean pretty) {
+    private static String stringify(final Object input, final boolean pretty, final int indentLevel) {
         StringBuilder output = new StringBuilder();
         List<Object> queue = new LinkedList<>();
         queue.add(valuefy(input));
-        Indent indent = new Indent("  ");
+        Indent indent = new Indent("  ", indentLevel);
         String elementSeparator = pretty ? ",\n" : ",";
         String keyValueSeparator = pretty ? ": " : ":";
         while (!queue.isEmpty()) {
             Object popped = queue.remove(0);
             if (popped instanceof String text) {
-                if (pretty) {
-                    handlePrettyString(output, indent, text);
-                }
                 output.append(text);
             } else if (popped instanceof JsonValue value) {
                 if (value.isPrimitive()) {
@@ -445,73 +447,79 @@ public class Json {
                     if (value.isArray()) {
                         output.append("[");
                         if (pretty) {
-                            handlePrettyArrayStart(output, indent, value);
+                            indent.longer();
+                            if (!value.asArray().isEmpty()) {
+                                output.append("\n");
+                            }
                         }
                         Iterator<JsonValue> iterator = value.asArray().iterator();
-                        int arrayPosition = 0;
                         while (iterator.hasNext()) {
                             JsonValue jsonValue = iterator.next();
-                            if (queue.isEmpty() && jsonValue.isPrimitive()) {
-                                if (pretty) {
-                                    output.append(indent.indent());
-                                }
+                            if (pretty) {
+                                output.append(indent.indent());
+                            }
+                            if (jsonValue.isPrimitive()) {
                                 output.append(jsonValue);
                             } else {
-                                queue.add(arrayPosition++, jsonValue);
+                                output.append(stringify(jsonValue, pretty, indent.level()));
                             }
                             if (iterator.hasNext()) {
-                                if (queue.isEmpty()) {
-                                    output.append(elementSeparator);
-                                } else {
-                                    queue.add(arrayPosition++, elementSeparator);
+                                output.append(elementSeparator);
+                            } else {
+                                if (pretty) {
+                                    output.append("\n");
                                 }
                             }
                         }
-                        if (queue.isEmpty()) {
-                            if (pretty) {
-                                handlePrettyArrayEnd(output, indent, value);
+                        indent.shorter();
+                        if (pretty) {
+                            if (!value.asArray().isEmpty()) {
+                                output.append(indent.indent());
                             }
-                            output.append("]");
-                        } else {
-                            queue.add(arrayPosition, "]");
+                            indent.shorter();
                         }
+                        output.append("]");
                     } else if (value.isObject()) {
                         output.append("{");
                         if (pretty) {
-                            handlePrettyObjectStart(output, indent, value);
+                            indent.longer();
+                            if (!value.asObject().isEmpty()) {
+                                output.append("\n");
+                            }
                         }
                         Iterator<Map.Entry<String, JsonValue>> iterator = value.asObject().entrySet().iterator();
-                        int mapPosition = 0;
                         while (iterator.hasNext()) {
                             Map.Entry<String, JsonValue> entry = iterator.next();
                             String key = new JsonString(entry.getKey()) + keyValueSeparator;
                             JsonValue jsonValue = entry.getValue();
-                            if (queue.isEmpty() && jsonValue.isPrimitive()) {
+                            if (jsonValue.isPrimitive()) {
                                 if (pretty) {
                                     output.append(indent.indent());
                                 }
                                 output.append(key);
                                 output.append(jsonValue);
                             } else {
-                                queue.add(mapPosition++, key);
-                                queue.add(mapPosition++, jsonValue);
+                                if (pretty) {
+                                    output.append(indent.indent());
+                                }
+                                output.append(key);
+                                output.append(stringify(jsonValue, pretty, indent.level()));
                             }
                             if (iterator.hasNext()) {
-                                if (queue.isEmpty()) {
-                                    output.append(elementSeparator);
-                                } else {
-                                    queue.add(mapPosition++, elementSeparator);
+                                output.append(elementSeparator);
+                            } else {
+                                if (pretty) {
+                                    output.append("\n");
                                 }
                             }
                         }
-                        if (queue.isEmpty()) {
-                            if (pretty) {
-                                handlePrettyObjectEnd(output, indent, value);
+                        indent.shorter();
+                        if (pretty) {
+                            if (!value.asObject().isEmpty()) {
+                                output.append(indent.indent());
                             }
-                            output.append("}");
-                        } else {
-                            queue.add(mapPosition, "}");
                         }
+                        output.append("}");
                     } else {
                         throw new JsonStringifyException("Could not convert " + value + " to string");
                     }
@@ -519,54 +527,6 @@ public class Json {
             }
         }
         return output.toString();
-    }
-
-    private static void handlePrettyObjectEnd(StringBuilder output, Indent indent, JsonValue value) {
-        if (!value.asObject().isEmpty()) {
-            output.append(indent.indent());
-        }
-        indent.shorter();
-    }
-
-    private static void handlePrettyArrayEnd(StringBuilder output, Indent indent, JsonValue value) {
-        if (!value.asArray().isEmpty()) {
-            output.append(indent.indent());
-        }
-        indent.shorter();
-    }
-
-    private static void handlePrettyObjectStart(StringBuilder output, Indent indent, JsonValue value) {
-        indent.longer();
-        if (!value.asObject().isEmpty()) {
-            output.append("\n");
-        }
-    }
-
-    private static void handlePrettyArrayStart(StringBuilder output, Indent indent, JsonValue value) {
-        indent.longer();
-        if (!value.asArray().isEmpty()) {
-            output.append("\n");
-        }
-    }
-
-    private static void handlePrettyString(StringBuilder output, Indent indent, String text) {
-        boolean arrayEnd = "]".equals(text);
-        boolean objectEnd = "}".equals(text);
-        if (arrayEnd || objectEnd) {
-            indent.shorter();
-        }
-        char lastCharacter = output.charAt(output.length() - 1);
-        if (lastCharacter == '\n') {
-            output.append(indent.indent());
-        } else if (arrayEnd) {
-            if (lastCharacter != '[') {
-                output.append("\n").append(indent.indent());
-            }
-        } else if (objectEnd) {
-            if (lastCharacter != '{') {
-                output.append("\n").append(indent.indent());
-            }
-        }
     }
 
     /**
