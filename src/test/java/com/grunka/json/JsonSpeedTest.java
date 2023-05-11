@@ -1,6 +1,7 @@
 package com.grunka.json;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.grunka.json.type.JsonArray;
 import com.grunka.json.type.JsonNumber;
 import com.grunka.json.type.JsonObject;
@@ -31,15 +32,16 @@ public class JsonSpeedTest {
 
     @Test
     public void shouldHandleObjectsQuickly() {
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
         Random random = new Random(11);
 
-        JsonObject originalObject = makeObject(random, 1_200_000, 1);
+        JsonObject originalObject = makeObject(random, 1100, 2);
 
-        String objectJson = Stopwatch.run("Object stringify", originalObject::toString);
+        String objectJson = Stopwatch.run("Object stringify", originalObject::toPrettyString);
         JsonValue parsedObject = Stopwatch.run("Object parse", () -> Json.parse(objectJson));
 
-        com.google.gson.JsonObject parsedGson = Stopwatch.run("GSON Object parse", () -> new Gson().fromJson(objectJson, com.google.gson.JsonObject.class));
-        assertEquals(objectJson, Stopwatch.run("GSON Object stringify", parsedGson::toString));
+        com.google.gson.JsonObject parsedGson = Stopwatch.run("GSON Object parse", () -> gson.fromJson(objectJson, com.google.gson.JsonObject.class));
+        assertEquals(objectJson, Stopwatch.run("GSON Object stringify", () -> gson.toJson(parsedGson)));
 
         System.out.println("Object JSON size " + (objectJson.length() / (1024 * 1024)) + "MB");
         assertEquals(originalObject, parsedObject);

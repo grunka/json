@@ -1,5 +1,7 @@
 package com.grunka.json.type;
 
+import com.grunka.json.Json;
+
 /**
  * Base class representing any JSON value
  */
@@ -115,5 +117,9 @@ public interface JsonValue {
      */
     default JsonObject asObject() {
         return (JsonObject) this;
+    }
+
+    default String toPrettyString() {
+        return Json.prettyStringify(this);
     }
 }

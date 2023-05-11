@@ -83,7 +83,6 @@ public class JsonArray implements JsonValue, List<JsonValue> {
 
     @Override
     public boolean containsAll(Collection<?> c) {
-        //noinspection SlowListContainsAll
         return values.containsAll(c);
     }
 
