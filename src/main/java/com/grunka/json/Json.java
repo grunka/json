@@ -303,6 +303,10 @@ public class Json {
      * @return the {@link JsonValue} representation
      */
     public static JsonValue valuefy(Object input) {
+        return internalValuefy(input, new Seen(null, null));
+    }
+
+    private static JsonValue internalValuefy(Object input, Seen seenObjects) {
         if (input == null) {
             return JsonNull.NULL;
         }
@@ -321,6 +325,7 @@ public class Json {
         if (input instanceof Temporal) {
             return new JsonString(input.toString());
         }
+        Seen nextSeen = seenObjects.push(input);
         if (input instanceof Map<?, ?> map) {
             JsonObject object = new JsonObject();
             map.forEach((key, value) -> {
@@ -330,18 +335,18 @@ public class Json {
                 } else {
                     keyValue = stringify(key);
                 }
-                object.put(keyValue, valuefy(value));
+                object.put(keyValue, internalValuefy(value, nextSeen));
             });
             return object;
         }
         if (input instanceof Collection<?> collection) {
             JsonArray array = new JsonArray();
-            collection.forEach(value -> array.add(valuefy(value)));
+            collection.forEach(value -> array.add(internalValuefy(value, nextSeen)));
             return array;
         }
         if (input instanceof Optional<?> optional) {
             if (optional.isPresent()) {
-                return valuefy(optional.get());
+                return internalValuefy(optional.get(), nextSeen);
             } else {
                 return JsonNull.NULL;
             }
@@ -359,7 +364,7 @@ public class Json {
                 throw new JsonStringifyException("Can not access field " + field.getName(), e);
             }
             if (value != null) {
-                JsonValue valuefied = valuefy(value);
+                JsonValue valuefied = internalValuefy(value, nextSeen);
                 if (!valuefied.isNull()) {
                     object.put(field.getName(), valuefied);
                 }
@@ -369,6 +374,19 @@ public class Json {
             }
         }
         return object;
+    }
+
+    private record Seen(Seen parent, Object value) {
+        Seen push(Object value) {
+            Seen current = this;
+            do {
+                if (current.value == value) {
+                    throw new IllegalArgumentException("Recursive structure encountered");
+                }
+                current = current.parent;
+            } while (current != null);
+            return new Seen(parent, value);
+        }
     }
 
     /**

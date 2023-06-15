@@ -480,4 +480,30 @@ public class JsonTest {
 
     private record MappedStructure(BigDecimal amount) {
     }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldFailForRecursiveStructureList() {
+        List<Object> recursive = new ArrayList<>();
+        //noinspection CollectionAddedToSelf
+        recursive.add(recursive);
+        Json.stringify(recursive);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldFailForRecursiveStructureMap() {
+        Map<String, Object> recursive = new HashMap<>();
+        //noinspection CollectionAddedToSelf
+        recursive.put("A", recursive);
+        Json.stringify(recursive);
+    }
+
+    @Test
+    public void shouldAllowSameCollectionNonRecursively() {
+        List<String> list = new ArrayList<>();
+        list.add("a");
+        List<List<String>> container = new ArrayList<>();
+        container.add(list);
+        container.add(list);
+        assertEquals("[[\"a\"],[\"a\"]]", Json.stringify(container));
+    }
 }
