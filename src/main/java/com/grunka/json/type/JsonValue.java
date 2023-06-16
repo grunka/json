@@ -119,6 +119,11 @@ public interface JsonValue {
         return (JsonObject) this;
     }
 
+    /**
+     * Makes a JSON string from the current value, formatted in a pretty way
+     *
+     * @return the value as a JSON string
+     */
     default String toPrettyString() {
         return Json.prettyStringify(this);
     }
