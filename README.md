@@ -21,7 +21,7 @@ Add the dependency
 <dependency>
     <groupId>com.grunka.json</groupId>
     <artifactId>json</artifactId>
-    <version>1.6</version>
+    <version>1.7</version>
 </dependency>
 ```
 
