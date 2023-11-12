@@ -506,4 +506,19 @@ public class JsonTest {
         container.add(list);
         assertEquals("[[\"a\"],[\"a\"]]", Json.stringify(container));
     }
+
+    @Test
+    public void shouldAllowMissingJsonAndExtraDataAfterWhenTryParsing() {
+        ParsedJson result0 = Json.tryParse("{}   Hello");
+        assertTrue(result0.jsonValue().isObject());
+        assertEquals("Hello", result0.remainder());
+
+        ParsedJson result1 = Json.tryParse("   Hello");
+        assertNull(result1.jsonValue());
+        assertEquals("Hello", result1.remainder());
+
+        ParsedJson result2 = Json.tryParse("");
+        assertNull(result2.jsonValue());
+        assertEquals("", result2.remainder());
+    }
 }

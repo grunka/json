@@ -82,6 +82,10 @@ public class Json {
         public String substring(int index, int length) {
             return new String(json, index, length);
         }
+
+        public String remainder() {
+            return new String(json, position, json.length - position);
+        }
     }
 
     /**
@@ -92,9 +96,36 @@ public class Json {
      * @throws JsonParseException if the parsing fails
      */
     public static JsonValue parse(String json) {
+        ParsedJson jsonValue = tryParse(json);
+        if (jsonValue.jsonValue() == null) {
+            throw new JsonParseException("Reached end of input without parsing any value");
+        }
+        if (!jsonValue.remainder().isEmpty()) {
+            throw new JsonParseException("Non parsable data found at end of input");
+        }
+        return jsonValue.jsonValue();
+    }
+
+    /**
+     * Attempts to parse a string into a {@link JsonValue}, returning any parsed object and the remaining string
+     *
+     * @param json a JSON string
+     * @return the parsed object
+     * @throws JsonParseException if the parsing fails
+     */
+    public static ParsedJson tryParse(String json) {
         State state = new State(json);
         while (!state.isFullyRead()) {
-            String match = nextMatch(state);
+            String match;
+            try {
+                match = nextMatch(state);
+            } catch (JsonParseException e) {
+                if (state.isBuilderMissing()) {
+                    state.rewindChar();
+                    return new ParsedJson(null, state.remainder());
+                }
+                throw e;
+            }
             JsonValue value = switch (match) {
                 case "null" -> JsonNull.NULL;
                 case "true" -> JsonBoolean.TRUE;
@@ -113,7 +144,7 @@ public class Json {
             }
             updateStateForArrayAndObjectParsing(state, value);
         }
-        throw new JsonParseException("Reached end of input without parsing any value");
+        return new ParsedJson(null, state.remainder());
     }
 
     private static String nextMatch(State state) {
@@ -190,13 +221,14 @@ public class Json {
         return result;
     }
 
-    private static JsonValue parsingCompleted(State state, JsonValue value) {
+    private static ParsedJson parsingCompleted(State state, JsonValue value) {
         //noinspection StatementWithEmptyBody
-        while (isWhitespace(state.nextChar())) ;
+        while (isWhitespace(state.nextChar()));
         if (state.isFullyRead()) {
-            return value;
+            return new ParsedJson(value, "");
         } else {
-            throw new JsonParseException("Non parsable data found at end of input");
+            state.rewindChar();
+            return new ParsedJson(value, state.remainder());
         }
     }
 
