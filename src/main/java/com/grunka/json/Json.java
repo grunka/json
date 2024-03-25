@@ -712,15 +712,18 @@ public class Json {
     }
 
     private static Object convertFromValue(JsonValue jsonValue, Class<?> type, Supplier<ParameterizedType> parameterizedTypeSupplier) {
-        if (JsonValue.class.isAssignableFrom(type)) {
-            ensureCastableJsonValue(jsonValue, type);
-            return jsonValue;
-        }
         if (JsonNull.NULL == jsonValue) {
+            if (type == JsonValue.class) {
+                return jsonValue;
+            }
             if (Optional.class.isAssignableFrom(type)) {
                 return Optional.empty();
             }
             return getDefaultValueForType(type);
+        }
+        if (JsonValue.class.isAssignableFrom(type)) {
+            ensureCastableJsonValue(jsonValue, type);
+            return jsonValue;
         }
         if (Optional.class.isAssignableFrom(type)) {
             Type typeArgument = parameterizedTypeSupplier.get().getActualTypeArguments()[0];

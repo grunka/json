@@ -521,4 +521,14 @@ public class JsonTest {
         assertNull(result2.jsonValue());
         assertEquals("", result2.remainder());
     }
+
+    @Test
+    public void shouldAssignNullToJsonObjectField() {
+        String stringified = Json.stringify(new NullableJsonObjectField(null, null));
+        NullableJsonObjectField objectified = Json.objectify(stringified, NullableJsonObjectField.class);
+        assertNull(objectified.object());
+        assertEquals(JsonNull.NULL, objectified.value());
+    }
+
+    private record NullableJsonObjectField(JsonObject object, JsonValue value) {}
 }
