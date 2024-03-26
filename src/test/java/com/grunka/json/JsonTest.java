@@ -531,4 +531,25 @@ public class JsonTest {
     }
 
     private record NullableJsonObjectField(JsonObject object, JsonValue value) {}
+
+    @Test
+    public void testQuickAccessMethods() {
+        String stringified = Json.stringify(Map.of(
+                "number", 123,
+                "boolean", true,
+                "string", "hello",
+                "array", List.of(1, 2, 3),
+                "object", Map.of("a", "b")
+        ));
+        JsonObject object = Json.parse(stringified).asObject();
+        assertEquals(123, object.getBigDecimal("number").intValue());
+        assertTrue(object.getBoolean("boolean"));
+        assertEquals("hello", object.getString("string"));
+        assertEquals(List.of(new JsonNumber(1), new JsonNumber(2), new JsonNumber(3)), object.getArray("array"));
+        assertEquals("b", object.getObject("object").getString("a"));
+
+        assertEquals("world", Json.parse("\"world\"").getString());
+        assertTrue(Json.parse("true").getBoolean());
+        assertEquals(123, Json.parse("123").getBigDecimal().intValue());
+    }
 }

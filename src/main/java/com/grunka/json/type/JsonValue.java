@@ -2,6 +2,8 @@ package com.grunka.json.type;
 
 import com.grunka.json.Json;
 
+import java.math.BigDecimal;
+
 /**
  * Base class representing any JSON value
  */
@@ -35,6 +37,18 @@ public interface JsonValue {
     }
 
     /**
+     * Attempts to get the Boolean value of this JsonValue
+     * @return true or false
+     * @throws IllegalArgumentException if this JsonValue is not a JsonBoolean
+     */
+    default Boolean getBoolean() {
+        if (!isBoolean()) {
+            throw new IllegalArgumentException("Value is not a boolean");
+        }
+        return asBoolean().getBoolean();
+    }
+
+    /**
      * Checks if the value is a JSON string value
      *
      * @return true if this instance is a {@link JsonString}
@@ -54,6 +68,18 @@ public interface JsonValue {
     }
 
     /**
+     * Attempts to get the String value of this JsonValue
+     * @return the string value in the JsonString
+     * @throws IllegalArgumentException if this JsonValue is not a JsonString
+     */
+    default String getString() {
+        if (!isString()) {
+            throw new IllegalArgumentException("Value is not a string");
+        }
+        return asString().getString();
+    }
+
+    /**
      * Checks if the value is a JSON number value
      *
      * @return true if this instance is a {@link JsonNumber}
@@ -70,6 +96,18 @@ public interface JsonValue {
      */
     default JsonNumber asNumber() {
         return (JsonNumber) this;
+    }
+
+    /**
+     * Attempts to get the BigDecimal value of this JsonValue
+     * @return the number in BigDecimal form
+     * @throws IllegalArgumentException if this JsonValue is not a JsonNumber
+     */
+    default BigDecimal getBigDecimal() {
+        if (!isNumber()) {
+            throw new IllegalArgumentException("Value is not a number");
+        }
+        return asNumber().getBigDecimal();
     }
 
     /**

@@ -2,6 +2,7 @@ package com.grunka.json.type;
 
 import com.grunka.json.Json;
 
+import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -63,6 +64,61 @@ public class JsonObject implements JsonValue, Map<String, JsonValue> {
     @Override
     public JsonValue get(Object key) {
         return values.get(key);
+    }
+
+    public JsonObject getObject(String key) {
+        JsonValue jsonValue = values.get(key);
+        if (jsonValue == null || jsonValue == JsonNull.NULL) {
+            return null;
+        }
+        if (!jsonValue.isObject()) {
+            throw new IllegalArgumentException("Key is not object");
+        }
+        return jsonValue.asObject();
+    }
+
+    public JsonArray getArray(String key) {
+        JsonValue jsonValue = values.get(key);
+        if (jsonValue == null || jsonValue == JsonNull.NULL) {
+            return null;
+        }
+        if (!jsonValue.isArray()) {
+            throw new IllegalArgumentException("Key is not array");
+        }
+        return jsonValue.asArray();
+    }
+
+    public String getString(String key) {
+        JsonValue jsonValue = values.get(key);
+        if (jsonValue == null || jsonValue == JsonNull.NULL) {
+            return null;
+        }
+        if (!jsonValue.isString()) {
+            throw new IllegalArgumentException("Key is not a string");
+        }
+        return jsonValue.asString().getString();
+    }
+
+    public BigDecimal getBigDecimal(String key) {
+        JsonValue jsonValue = values.get(key);
+        if (jsonValue == null || jsonValue == JsonNull.NULL) {
+            return null;
+        }
+        if (!jsonValue.isNumber()) {
+            throw new IllegalArgumentException("Key is not a number");
+        }
+        return jsonValue.asNumber().getBigDecimal();
+    }
+
+    public Boolean getBoolean(String key) {
+        JsonValue jsonValue = values.get(key);
+        if (jsonValue == null || jsonValue == JsonNull.NULL) {
+            return null;
+        }
+        if (!jsonValue.isBoolean()) {
+            throw new IllegalArgumentException("Key is not a number");
+        }
+        return jsonValue.asBoolean().getBoolean();
     }
 
     @Override
