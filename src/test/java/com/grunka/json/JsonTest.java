@@ -552,4 +552,21 @@ public class JsonTest {
         assertTrue(Json.parse("true").getBoolean());
         assertEquals(123, Json.parse("123").getBigDecimal().intValue());
     }
+
+    private static class ClassWithAConstantInIt {
+        public static final String[] CONSTANT = {"A", "B"};
+        public final String value;
+
+        public ClassWithAConstantInIt(String value) {
+            this.value = value;
+        }
+    }
+
+    @Test
+    public void shouldNotAffectTheConstants() {
+        assertEquals("{\"value\":\"something\"}", Json.stringify(new ClassWithAConstantInIt("something")));
+        ClassWithAConstantInIt objectified = Json.objectify("{\"value\":\"something\"}", ClassWithAConstantInIt.class);
+        assertEquals("something", objectified.value);
+        assertEquals("A", objectified.CONSTANT[0]);
+    }
 }

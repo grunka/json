@@ -385,6 +385,10 @@ public class Json {
         }
         JsonObject object = new JsonObject();
         for (Field field : input.getClass().getDeclaredFields()) {
+            int fieldModifiers = field.getModifiers();
+            if (Modifier.isStatic(fieldModifiers) || Modifier.isTransient(fieldModifiers)) {
+                continue;
+            }
             boolean canAccess = field.canAccess(input);
             if (!canAccess) {
                 field.setAccessible(true);
@@ -695,6 +699,10 @@ public class Json {
             throw new JsonObjectifyException("Could not instantiate a " + type.getName(), e);
         }
         for (Field field : type.getDeclaredFields()) {
+            int fieldModifiers = field.getModifiers();
+            if (Modifier.isStatic(fieldModifiers)) {
+                continue;
+            }
             if (!field.trySetAccessible()) {
                 continue;
             }
